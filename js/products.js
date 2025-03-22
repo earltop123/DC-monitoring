@@ -8,6 +8,20 @@ const rowsPerPage = 50;
 let totalRows = 0;
 let filteredLogs = [];
 
+// Placeholder function for navigation (to be implemented later)
+function navigateTo(page) {
+    console.log(`Navigating to ${page} page`);
+    // Placeholder: Add navigation logic here once other pages are built
+    // For now, we'll just log the page
+    if (page === 'products') {
+        // Already on this page
+    } else if (page === 'vendors') {
+        // Navigate to Vendor Activity page (to be implemented)
+    } else if (page === 'sales') {
+        // Navigate to Sales Dashboard page (to be implemented)
+    }
+}
+
 // Function to fetch and display products
 async function fetchProducts() {
     console.log('Fetching products from Supabase');
