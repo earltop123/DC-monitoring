@@ -12,7 +12,7 @@
 
         <!-- Add Product Form -->
         <div class="form-section">
-            <h2>Add Product</h2>
+            <h2>Add New Product</h2>
             <form id="add-product-form">
                 <input type="text" id="product-name" placeholder="Product Name" required>
                 <input type="number" id="selling-price" placeholder="Selling Price" step="0.01" min="0" required>
@@ -25,18 +25,20 @@
         <!-- Product List -->
         <div class="product-list">
             <h2>Products</h2>
-            <table id="product-table">
-                <thead>
-                    <tr>
-                        <th>Name</th>
-                        <th>Selling Price</th>
-                        <th>Supplier Price</th>
-                        <th>Stock</th>
-                        <th>Actions</th>
-                    </tr>
-                </thead>
-                <tbody></tbody>
-            </table>
+            <div class="table-wrapper">
+                <table id="product-table">
+                    <thead>
+                        <tr>
+                            <th>Name</th>
+                            <th>Selling Price</th>
+                            <th>Supplier Price</th>
+                            <th>Stock</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody></tbody>
+                </table>
+            </div>
         </div>
 
         <!-- Add Stock Form -->
@@ -54,19 +56,110 @@
         <!-- Stock Logs -->
         <div class="stock-logs">
             <h2>Stock Addition Logs</h2>
-            <table id="stock-log-table">
-                <thead>
-                    <tr>
-                        <th>Product Name</th>
-                        <th>Quantity</th>
-                        <th>Total Price (Supplier)</th>
-                        <th>Date Added (Manila)</th>
-                    </tr>
-                </thead>
-                <tbody></tbody>
-            </table>
+            <div class="total-balance">
+                <strong>Total Remaining Balance:</strong> <span id="total-remaining-balance">₱ 0.00</span>
+            </div>
+            <div class="filters">
+                <label for="month-filter">Filter by Month:</label>
+                <select id="month-filter">
+                    <option value="">All Months</option>
+                    <!-- Populated dynamically -->
+                </select>
+                <label for="sort-order">Sort by Date:</label>
+                <select id="sort-order">
+                    <option value="desc">Latest First</option>
+                    <option value="asc">Oldest First</option>
+                </select>
+            </div>
+            <div class="table-wrapper">
+                <table id="stock-log-table">
+                    <thead>
+                        <tr>
+                            <th>Product Name</th>
+                            <th>Quantity</th>
+                            <th>Total Price (Supplier)</th>
+                            <th>Remaining Balance</th>
+                            <th>Date Added (Manila)</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody></tbody>
+                </table>
+            </div>
+            <div class="pagination">
+                <button id="prev-page" disabled>Previous Page</button>
+                <span id="page-info">Page 1</span>
+                <button id="next-page" disabled>Next Page</button>
+            </div>
         </div>
     </div>
+
+    <!-- Edit Product Modal -->
+    <div id="edit-product-modal" class="modal" style="display: none;">
+        <div class="modal-content">
+            <h2>Edit Product</h2>
+            <form id="edit-product-form">
+                <input type="hidden" id="edit-product-id">
+                <label for="edit-product-name">Product Name:</label>
+                <input type="text" id="edit-product-name" required>
+                <label for="edit-selling-price">Selling Price:</label>
+                <input type="number" id="edit-selling-price" step="0.01" min="0" required>
+                <label for="edit-supplier-price">Supplier Price:</label>
+                <input type="number" id="edit-supplier-price" step="0.01" min="0" required>
+                <button type="submit">Update Product</button>
+                <button type="button" onclick="closeEditProductModal()">Cancel</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Add Payment Modal -->
+    <div id="add-payment-modal" class="modal" style="display: none;">
+        <div class="modal-content">
+            <h2>Add Payment</h2>
+            <form id="add-payment-form">
+                <input type="hidden" id="payment-stock-log-id">
+                <label for="payment-amount">Amount:</label>
+                <input type="number" id="payment-amount" step="0.01" min="0" required>
+                <label for="payment-method">Payment Method:</label>
+                <select id="payment-method" required>
+                    <option value="">Select Method</option>
+                    <option value="Cash">Cash</option>
+                    <option value="Online">Online</option>
+                </select>
+                <button type="submit">Submit Payment</button>
+                <button type="button" onclick="closeAddPaymentModal()">Cancel</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Loading Modal -->
+    <div id="loading-modal" class="modal" style="display: none;">
+        <div class="modal-content">
+            <h2>Loading...</h2>
+            <p>Please wait while the operation is being processed.</p>
+        </div>
+    </div>
+
+    <!-- Payment History Modal -->
+    <div id="payment-history-modal" class="modal" style="display: none;">
+        <div class="modal-content">
+            <h2>Payment History</h2>
+            <div class="table-wrapper">
+                <table id="payment-history-table">
+                    <thead>
+                        <tr>
+                            <th>Amount</th>
+                            <th>Payment Method</th>
+                            <th>Date Paid (Manila)</th>
+                        </tr>
+                    </thead>
+                    <tbody></tbody>
+                </table>
+            </div>
+            <button onclick="closePaymentHistoryModal()">Close</button>
+        </div>
+    </div>
+
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="js/products.js"></script>
 </body>
