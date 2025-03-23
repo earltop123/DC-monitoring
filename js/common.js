@@ -1,7 +1,7 @@
+// common.js
 const supabaseUrl = 'https://vefirimqfcqcirgrhrpy.supabase.co';
 const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZlZmlyaW1xZmNxY2lyZ3JocnB5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDI2NDg4MDIsImV4cCI6MjA1ODIyNDgwMn0.hLFVAUrrD1PtsfBbFuivh3b83z6YtMyKJrx8Idz2T_E';
 
-// Initialize Supabase client once
 const supabase = window.supabase.createClient(supabaseUrl, supabaseKey);
 
 async function checkAuth(requiredRole = 'management') {
@@ -10,7 +10,6 @@ async function checkAuth(requiredRole = 'management') {
         showToast('Please log in to access this page.', () => window.location.href = 'login.html');
         return false;
     }
-    // Update headers with session token instead of reinitializing
     supabase.realtime.setAuth(session.access_token);
     const { data: profiles, error: profileError } = await supabase
         .from('profiles')
@@ -46,7 +45,32 @@ function showToast(message, callback) {
     }, 2000);
 }
 
+function showMessageModal(title, message) {
+    const modal = document.getElementById('message-modal') || createModal('message-modal', `
+        <h3 id="message-title"></h3>
+        <p id="message-text"></p>
+        <button onclick="this.closest('.modal').style.display='none'">Close</button>
+    `);
+    modal.querySelector('#message-title').textContent = title;
+    modal.querySelector('#message-text').textContent = message;
+    modal.style.display = 'flex';
+}
+
+function createModal(id, content) {
+    const modal = document.createElement('div');
+    modal.id = id;
+    modal.className = 'modal';
+    modal.innerHTML = `<div class="modal-content">${content}</div>`;
+    document.body.appendChild(modal);
+    return modal;
+}
+
 function renderMenu(allowedPages = ['products', 'vendors', 'sales', 'management-dashboard', 'agent-list']) {
+    const menuContainer = document.querySelector('.menu-container');
+    if (!menuContainer) {
+        console.warn('Menu container not found in DOM');
+        return;
+    }
     const menuItems = [
         { page: 'product', label: 'Product Management' },
         { page: 'delivery-management', label: 'Delivery' },
@@ -58,7 +82,6 @@ function renderMenu(allowedPages = ['products', 'vendors', 'sales', 'management-
         { page: 'total-vendor-list', label: 'Vendor List' },
     ].filter(item => allowedPages.includes(item.page));
 
-    const menuContainer = document.querySelector('.menu-container');
     menuContainer.innerHTML = `
         <button class="menu-btn">Menu</button>
         <div class="menu-content">
