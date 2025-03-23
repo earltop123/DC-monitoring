@@ -1,307 +1,259 @@
-const supabaseUrl = 'https://vefirimqfcqcirgrhrpy.supabase.co';
-const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZlZmlyaW1xZmNxY2lyZ3JocnB5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDI2NDg4MDIsImV4cCI6MjA1ODIyNDgwMn0.hLFVAUrrD1PtsfBbFuivh3b83z6YtMyKJrx8Idz2T_E';
-const supabase = window.supabase.createClient(supabaseUrl, supabaseKey);
-
+// order-placement.js
 let products = [];
 let chiliSauceId = null;
 let productRows = 1;
 let pendingOrderData = null;
 
-// Show message modal (for errors)
-function showMessageModal(title, message) {
-    const modal = document.getElementById('message-modal');
-    document.getElementById('message-title').textContent = title;
-    document.getElementById('message-text').textContent = message;
-    if (modal) modal.style.display = 'flex';
-}
-
-// Close message modal
-function closeMessageModal() {
-    const modal = document.getElementById('message-modal');
-    if (modal) modal.style.display = 'none';
-}
-
-// Show toast notification (for success)
-function showToast(message, callback) {
-    const toastContainer = document.getElementById('toast-container');
-    const toast = document.createElement('div');
-    toast.className = 'toast';
-    toast.textContent = message;
-    if (toastContainer) toastContainer.appendChild(toast);
-    setTimeout(() => {
-        toast.remove();
-        if (callback) callback();
-    }, 2000);
-}
-
-// Show chili sauce confirmation modal
 function showChiliSauceModal(bundledChiliSauceCount, extraChiliSauceCount) {
-    let modal = document.getElementById('chili-sauce-modal');
-    if (!modal) {
-        modal = document.createElement('div');
-        modal.id = 'chili-sauce-modal';
-        modal.className = 'modal';
-        modal.innerHTML = `
-            <div class="modal-content">
-                <p id="chili-sauce-message"></p>
-                <button onclick="confirmChiliSauce(true)">Yes</button>
-                <button onclick="confirmChiliSauce(false)">No</button>
-            </div>
-        `;
-        document.body.appendChild(modal);
-    }
-    const messageElement = modal.querySelector('#chili-sauce-message');
-    messageElement.textContent = `You have included chili sauce with your products (${bundledChiliSauceCount} packs) and added extra chili sauce (${extraChiliSauceCount} packs). Do you want to proceed with the extra chili sauce?`;
+    const modal = document.getElementById('chili-sauce-modal') || createModal('chili-sauce-modal', `
+        <p id="chili-sauce-message"></p>
+        <button onclick="confirmChiliSauce(true)">Yes</button>
+        <button onclick="confirmChiliSauce(false)">No</button>
+    `);
+    modal.querySelector('#chili-sauce-message').textContent = 
+        `You have included chili sauce with your products (${bundledChiliSauceCount} packs) and added extra chili sauce (${extraChiliSauceCount} packs). Do you want to proceed with the extra chili sauce?`;
     modal.style.display = 'flex';
 }
 
-// Handle chili sauce confirmation
 function confirmChiliSauce(confirm) {
     const modal = document.getElementById('chili-sauce-modal');
     if (modal) modal.style.display = 'none';
-    if (!confirm) {
-        const rows = document.querySelectorAll('.product-row');
-        const filteredRows = Array.from(rows).filter(row => {
-            const productId = row.querySelector('.product-select').value;
-            if (productId == chiliSauceId) {
-                row.remove();
-                return false;
-            }
-            return true;
-        });
-        if (filteredRows.length === 0) addProductRow();
-    }
+    if (!confirm) removeExtraChiliSauce();
     showReviewModal(pendingOrderData);
     pendingOrderData = null;
 }
 
-// Get vendor_id from URL
-const urlParams = new URLSearchParams(window.location.search);
-const vendorIdFromUrl = urlParams.get('vendor_id');
+function removeExtraChiliSauce() {
+    const rows = document.querySelectorAll('.product-row');
+    const filteredRows = Array.from(rows).filter(row => {
+        const productId = row.querySelector('.product-select').value;
+        if (productId == chiliSauceId) {
+            row.remove();
+            return false;
+        }
+        return true;
+    });
+    if (!filteredRows.length) addProductRow();
+}
 
-// Populate vendor suggestions
+// Vendor suggestions
+// Vendor suggestions
 document.getElementById('vendor-name').addEventListener('input', async (e) => {
     const query = e.target.value;
+    const suggestions = document.getElementById('vendor-suggestions');
     if (query.length < 2) {
-        document.getElementById('vendor-suggestions').innerHTML = '';
+        suggestions.innerHTML = '';
         document.getElementById('vendor-id').value = '';
         document.getElementById('agent-name').value = '';
         return;
     }
-    const { data, error } = await supabase
+
+    // Fetch vendors
+    const { data: vendors, error: vendorError } = await supabase
         .from('vendors')
-        .select('id, name, agent_id, sales_agents(name)')
+        .select('id, name, agent_id')
         .ilike('name', `%${query}%`);
-    if (error) {
-        console.error('Error fetching vendors:', error.message);
+    if (vendorError) {
+        console.error('Error fetching vendors:', vendorError.message);
         return;
     }
-    const suggestions = document.getElementById('vendor-suggestions');
-    suggestions.innerHTML = '';
-    data.forEach(vendor => {
-        const div = document.createElement('div');
-        div.className = 'suggestion-item';
-        div.textContent = vendor.name;
-        div.onclick = () => {
-            document.getElementById('vendor-name').value = vendor.name;
-            document.getElementById('vendor-id').value = vendor.id;
-            document.getElementById('agent-name').value = vendor.sales_agents.name;
-            suggestions.innerHTML = '';
+    console.log('Vendors fetched:', vendors); // Debug: Check vendor data
+
+    // Fetch agents
+    const agentIds = vendors.map(v => v.agent_id).filter(id => id);
+    console.log('Agent IDs:', agentIds); // Debug: Verify agent IDs
+    let agents = [];
+    if (agentIds.length > 0) {
+        const { data: agentData, error: agentError } = await supabase
+            .from('sales_agents')
+            .select('id, name')
+            .in('id', agentIds);
+        if (agentError) {
+            console.error('Error fetching agents:', agentError.message);
+        } else {
+            agents = agentData || [];
+            console.log('Agents fetched:', agents); // Debug: Check agent data
+        }
+    }
+
+    // Map vendor and agent data
+    const vendorData = vendors.map(vendor => {
+        const agent = agents.find(a => a.id === vendor.agent_id);
+        console.log(`Matching agent for vendor ${vendor.name}:`, { vendorAgentId: vendor.agent_id, agent }); // Debug: Verify match
+        return {
+            id: vendor.id,
+            name: vendor.name,
+            agent_name: agent?.name || 'No Agent Assigned'
         };
-        suggestions.appendChild(div);
     });
+    console.log('Vendor data mapped:', vendorData); // Debug: Final mapped data
+
+    // Render suggestions
+    suggestions.innerHTML = vendorData.map(vendor => `
+        <div class="suggestion-item" onclick="selectVendor('${vendor.id}', '${vendor.name}', '${vendor.agent_name}')">${vendor.name}</div>
+    `).join('');
 });
 
-// Populate products dropdown
+function selectVendor(id, name, agentName) {
+    document.getElementById('vendor-name').value = name;
+    document.getElementById('vendor-id').value = id;
+    document.getElementById('agent-name').value = agentName;
+    document.getElementById('vendor-suggestions').innerHTML = '';
+    console.log('Selected:', { id, name, agentName }); // Debug: Final selected values
+}
+
+// Products
 async function populateProducts() {
-    const { data, error } = await supabase
-        .from('products')
-        .select('*');
-    if (error) {
-        console.error('Error fetching products:', error.message);
-        return;
-    }
-    products = data;
-    chiliSauceId = products.find(p => p.name === 'Chili Sauce (100grams)')?.id;
+    const { data, error } = await supabase.from('products').select('id, name, selling_price, stock');
+    if (error) return console.error('Error fetching products:', error.message);
+    products = data.map(p => ({ ...p, currentStock: p.stock }));
+    chiliSauceId = products.find(p => p.name === 'Chili Sauce (100grams)')?.id || null;
     if (!chiliSauceId) console.warn('Chili Sauce (100grams) not found.');
-    const productSelects = document.querySelectorAll('.product-select');
-    productSelects.forEach(select => {
-        const currentValue = select.value;
-        select.innerHTML = '<option value="">Select Product</option>';
-        products.forEach(product => {
-            const option = document.createElement('option');
-            option.value = product.id;
-            option.textContent = product.name;
-            select.appendChild(option);
-        });
-        if (currentValue) select.value = currentValue;
-        const row = select.closest('.product-row');
-        const chiliSauceLabel = row.querySelector('.chili-sauce-label');
-        const chiliSauceCheckbox = row.querySelector('.chili-sauce');
-        if (select.value == chiliSauceId) {
-            if (chiliSauceLabel) chiliSauceLabel.style.display = 'none';
-            if (chiliSauceCheckbox) {
-                chiliSauceCheckbox.style.display = 'none';
-                chiliSauceCheckbox.checked = false;
-            }
-        } else {
-            if (chiliSauceLabel) chiliSauceLabel.style.display = 'inline-block';
-            if (chiliSauceCheckbox) chiliSauceCheckbox.style.display = 'inline-block';
-        }
-    });
+    updateAllProductSelects();
     updateTotalAmount();
 }
 
-// Add product row
+function updateAllProductSelects() {
+    document.querySelectorAll('.product-select').forEach(select => {
+        const currentValue = select.value;
+        select.innerHTML = '<option value="">Select Product</option>' + 
+            products.map(p => `<option value="${p.id}">${p.name} (Php ${p.selling_price.toFixed(2)} Stock: ${p.currentStock})</option>`).join('');
+        select.value = currentValue || '';
+        const row = select.closest('.product-row');
+        toggleChiliSauceVisibility(row, select.value == chiliSauceId);
+    });
+}
+
+function toggleChiliSauceVisibility(row, hide) {
+    const label = row.querySelector('.chili-sauce-label');
+    const checkbox = row.querySelector('.chili-sauce');
+    if (label) label.style.display = hide ? 'none' : 'inline-block';
+    if (checkbox) {
+        checkbox.style.display = hide ? 'none' : 'inline-block';
+        if (hide) checkbox.checked = false;
+    }
+}
+
 function addProductRow() {
     const container = document.getElementById('products-container');
-    const row = document.createElement('div');
-    row.className = 'product-row';
-    row.innerHTML = `
-        <label for="product-${productRows}">Product:</label>
-        <select class="product-select" id="product-${productRows}" required></select>
-        <div class="quantity-container">
-            <label for="quantity-${productRows}">Quantity:</label>
-            <input type="number" class="quantity" id="quantity-${productRows}" min="1" value="1" required>
-            <label for="chili-sauce-${productRows}" class="chili-sauce-label">Include Chili Sauce:</label>
-            <input type="checkbox" class="chili-sauce" id="chili-sauce-${productRows}" checked>
+    container.insertAdjacentHTML('beforeend', `
+        <div class="product-row">
+            <label for="product-${productRows}">Product:</label>
+            <select class="product-select" id="product-${productRows}" required></select>
+            <div class="quantity-container">
+                <label for="quantity-${productRows}">Quantity:</label>
+                <input type="number" class="quantity" id="quantity-${productRows}" min="1" value="1" required>
+                <label for="chili-sauce-${productRows}" class="chili-sauce-label">Include Chili Sauce:</label>
+                <input type="checkbox" class="chili-sauce" id="chili-sauce-${productRows}" checked>
+            </div>
+            <span class="price" id="price-${productRows}"></span>
+            <button type="button" class="remove-btn" onclick="removeProductRow(this)">Remove</button>
         </div>
-        <span class="price" id="price-${productRows}"></span>
-        <button type="button" class="remove-btn" onclick="removeProductRow(this)">Remove</button>
-    `;
-    container.appendChild(row);
+    `);
     productRows++;
-    populateProducts();
+    updateAllProductSelects();
 }
 
-// Remove product row
 function removeProductRow(btn) {
     btn.parentElement.remove();
+    resetStock();
     updateTotalAmount();
 }
 
-// Update total amount
+function resetStock() {
+    products.forEach(p => p.currentStock = p.stock);
+    updateAllProductSelects();
+}
+
+// Update this function to return the total
 function updateTotalAmount() {
     let total = 0;
-    const rows = document.querySelectorAll('.product-row');
-    rows.forEach(row => {
+    resetStock();
+    document.querySelectorAll('.product-row').forEach(row => {
         const productId = row.querySelector('.product-select').value;
         if (!productId) return;
         const quantity = parseInt(row.querySelector('.quantity').value) || 1;
-        const chiliSauceCheckbox = row.querySelector('.chili-sauce');
-        const chiliSauce = chiliSauceCheckbox ? chiliSauceCheckbox.checked : false;
+        const chiliSauce = row.querySelector('.chili-sauce')?.checked || false;
         const product = products.find(p => p.id == productId);
         if (product) {
             let rowTotal = product.selling_price * quantity;
+            product.currentStock -= quantity;
             if (chiliSauce && product.id != chiliSauceId && chiliSauceId) {
                 const chili = products.find(p => p.id == chiliSauceId);
-                if (chili) rowTotal += chili.selling_price * quantity;
+                if (chili) {
+                    rowTotal += chili.selling_price * quantity;
+                    chili.currentStock -= quantity;
+                }
             }
             total += rowTotal;
             row.querySelector('.price').textContent = `₱ ${rowTotal.toFixed(2)}`;
         }
     });
     document.getElementById('total-amount').textContent = `₱ ${total.toFixed(2)}`;
-    return total;
+    updateAllProductSelects();
+    return total; // Return the total value
 }
 
-// Event listener for product selection, quantity, and chili sauce
-document.addEventListener('change', (e) => {
-    if (e.target.classList.contains('product-select')) {
-        const row = e.target.closest('.product-row');
-        const chiliSauceLabel = row.querySelector('.chili-sauce-label');
-        const chiliSauceCheckbox = row.querySelector('.chili-sauce');
-        if (e.target.value == chiliSauceId) {
-            if (chiliSauceLabel) chiliSauceLabel.style.display = 'none';
-            if (chiliSauceCheckbox) {
-                chiliSauceCheckbox.style.display = 'none';
-                chiliSauceCheckbox.checked = false;
-            }
-        } else {
-            if (chiliSauceLabel) chiliSauceLabel.style.display = 'inline-block';
-            if (chiliSauceCheckbox) chiliSauceCheckbox.style.display = 'inline-block';
-        }
-        updateTotalAmount();
-    } else if (e.target.classList.contains('quantity') || e.target.classList.contains('chili-sauce')) {
+// Real-time event listeners
+document.addEventListener('input', (e) => {
+    const row = e.target.closest('.product-row');
+    if (!row) return;
+    if (e.target.classList.contains('quantity') || e.target.classList.contains('chili-sauce')) {
         updateTotalAmount();
     }
 });
 
-// Show review modal
+document.addEventListener('change', (e) => {
+    const row = e.target.closest('.product-row');
+    if (!row) return;
+    if (e.target.classList.contains('product-select')) {
+        toggleChiliSauceVisibility(row, e.target.value == chiliSauceId);
+        updateTotalAmount();
+    }
+});
+
 function showReviewModal(orderData) {
     const { vendorId, products: orderProducts, totalAmount } = orderData;
-    const reviewDetails = document.getElementById('review-details');
-    reviewDetails.innerHTML = `
+    document.getElementById('review-details').innerHTML = `
         <p><strong>Vendor:</strong> ${document.getElementById('vendor-name').value}</p>
         <p><strong>Agent:</strong> ${document.getElementById('agent-name').value}</p>
         <h3>Products:</h3>
-        <ul>
-            ${orderProducts.map(p => `<li>${p.name} (₱ ${p.price.toFixed(2)} x ${p.quantity}) ${p.chili_sauce ? ' + Chili Sauce' : ''}</li>`).join('')}
-        </ul>
+        <ul>${orderProducts.map(p => `<li>${p.name} (₱ ${p.price.toFixed(2)} x ${p.quantity})${p.chili_sauce ? ' + Chili Sauce' : ''}</li>`).join('')}</ul>
         <p><strong>Total Amount:</strong> ₱ ${totalAmount.toFixed(2)}</p>
     `;
     document.getElementById('review-modal').style.display = 'flex';
-    localStorage.setItem('order-data', JSON.stringify({ vendorId, products: orderProducts, totalAmount }));
+    localStorage.setItem('order-data', JSON.stringify(orderData));
 }
 
-// Handle form submission
+// Form submission
 document.getElementById('order-form').addEventListener('submit', async (e) => {
     e.preventDefault();
     const vendorId = document.getElementById('vendor-id').value;
-    if (!vendorId) {
-        showMessageModal('Error', 'Please select a vendor');
-        return;
-    }
-    const rows = document.querySelectorAll('.product-row');
-    const orderProducts = [];
-    let totalAmount = 0;
-    let bundledChiliSauceCount = 0;
-    let extraChiliSauceCount = 0;
-    for (const row of rows) {
+    if (!vendorId) return showMessageModal('Error', 'Please select a vendor');
+    const orderProducts = Array.from(document.querySelectorAll('.product-row')).map(row => {
         const productId = row.querySelector('.product-select').value;
-        const quantity = parseInt(row.querySelector('.quantity').value) || 1;
-        const chiliSauceCheckbox = row.querySelector('.chili-sauce');
-        const chiliSauce = chiliSauceCheckbox ? chiliSauceCheckbox.checked : false;
         const product = products.find(p => p.id == productId);
-        if (!product) {
-            showMessageModal('Error', 'Please select a product in all rows');
-            return;
-        }
-        orderProducts.push({
-            id: product.id,
-            name: product.name,
-            price: product.selling_price,
-            quantity: quantity,
-            chili_sauce: chiliSauce && product.id != chiliSauceId
-        });
-        totalAmount += product.selling_price * quantity;
-        if (chiliSauce && product.id != chiliSauceId) {
-            const chili = products.find(p => p.id == chiliSauceId);
-            if (chili) {
-                totalAmount += chili.selling_price * quantity;
-                bundledChiliSauceCount += quantity;
-            }
-        }
-        if (product.id == chiliSauceId) extraChiliSauceCount += quantity;
-    }
+        if (!product) return null;
+        const quantity = parseInt(row.querySelector('.quantity').value) || 1;
+        const chiliSauce = row.querySelector('.chili-sauce')?.checked || false;
+        return { id: product.id, name: product.name, price: product.selling_price, quantity, chili_sauce: chiliSauce && product.id != chiliSauceId };
+    }).filter(p => p);
+    if (!orderProducts.length) return showMessageModal('Error', 'Please select a product in all rows');
+    const totalAmount = updateTotalAmount(); // Capture the returned total
     const orderData = { vendorId, products: orderProducts, totalAmount };
     pendingOrderData = orderData;
-    const hasBundledChiliSauce = orderProducts.some(p => p.chili_sauce);
-    const hasExtraChiliSauce = orderProducts.some(p => p.id == chiliSauceId);
-    if (hasBundledChiliSauce && hasExtraChiliSauce) {
-        showChiliSauceModal(bundledChiliSauceCount, extraChiliSauceCount);
-    } else {
-        showReviewModal(orderData);
-    }
+    const bundledChiliSauceCount = orderProducts.reduce((sum, p) => sum + (p.chili_sauce ? p.quantity : 0), 0);
+    const extraChiliSauceCount = orderProducts.reduce((sum, p) => sum + (p.id == chiliSauceId ? p.quantity : 0), 0);
+    (bundledChiliSauceCount && extraChiliSauceCount) ? showChiliSauceModal(bundledChiliSauceCount, extraChiliSauceCount) : showReviewModal(orderData);
 });
 
-// Edit Order
 function editOrder() {
     document.getElementById('review-modal').style.display = 'none';
     localStorage.removeItem('order-data');
+    resetStock();
+    updateTotalAmount();
 }
 
-// Confirm Order
 async function confirmOrder() {
     const orderData = JSON.parse(localStorage.getItem('order-data'));
     if (!orderData) return;
@@ -309,148 +261,70 @@ async function confirmOrder() {
     document.getElementById('review-modal').style.display = 'none';
     document.getElementById('loading-modal').style.display = 'flex';
 
-    // Check stock levels
     for (const product of orderProducts) {
-        const { data: productData, error } = await supabase
-            .from('products')
-            .select('stock')
-            .eq('id', product.id)
-            .single();
-        if (error || productData.stock < product.quantity) {
-            document.getElementById('loading-modal').style.display = 'none';
-            showMessageModal('Error', `Insufficient stock for ${product.name}`);
-            return;
-        }
-        if (product.chili_sauce) {
-            const { data: chiliData, error: chiliError } = await supabase
-                .from('products')
-                .select('stock')
-                .eq('id', chiliSauceId)
-                .single();
-            if (chiliError || chiliData.stock < product.quantity) {
-                document.getElementById('loading-modal').style.display = 'none';
-                showMessageModal('Error', 'Insufficient stock for Chili Sauce');
-                return;
-            }
+        const { data, error } = await supabase.from('products').select('stock').eq('id', product.id).single();
+        if (error || data.stock < product.quantity) return handleStockError(product.name);
+        if (product.chili_sauce && chiliSauceId) {
+            const { data: chiliData, error: chiliError } = await supabase.from('products').select('stock').eq('id', chiliSauceId).single();
+            if (chiliError || chiliData.stock < product.quantity) return handleStockError('Chili Sauce');
         }
     }
 
-    // Calculate total chili sauce quantity
-    let totalChiliSauceQuantity = 0;
+    const totalChiliSauceQuantity = orderProducts.reduce((sum, p) => sum + (p.chili_sauce || p.id == chiliSauceId ? p.quantity : 0), 0);
+    if (chiliSauceId) {
+        const { data, error } = await supabase.from('products').select('stock').eq('id', chiliSauceId).single();
+        if (error || data.stock < totalChiliSauceQuantity) return handleStockError('Chili Sauce');
+    }
+
     for (const product of orderProducts) {
-        if (product.chili_sauce) totalChiliSauceQuantity += product.quantity;
-        if (product.id == chiliSauceId) totalChiliSauceQuantity += product.quantity;
+        await updateStock(product.id, product.quantity);
+        if (product.chili_sauce && chiliSauceId) await updateStock(chiliSauceId, product.quantity);
     }
 
-    // Check stock for total chili sauce
-    const { data: chiliData, error: chiliError } = await supabase
-        .from('products')
-        .select('stock')
-        .eq('id', chiliSauceId)
-        .single();
-    if (chiliError || chiliData.stock < totalChiliSauceQuantity) {
-        document.getElementById('loading-modal').style.display = 'none';
-        showMessageModal('Error', 'Insufficient stock for Chili Sauce');
-        return;
-    }
-
-    // Update stock levels
-    for (const product of orderProducts) {
-        const { data: currentStock } = await supabase
-            .from('products')
-            .select('stock')
-            .eq('id', product.id)
-            .single();
-        await supabase
-            .from('products')
-            .update({ stock: currentStock.stock - product.quantity })
-            .eq('id', product.id);
-        if (product.chili_sauce) {
-            const { data: chiliStock } = await supabase
-                .from('products')
-                .select('stock')
-                .eq('id', chiliSauceId)
-                .single();
-            await supabase
-                .from('products')
-                .update({ stock: chiliStock.stock - product.quantity })
-                .eq('id', chiliSauceId);
-        }
-    }
-
-    // Update stock for extra chili sauce
-    const extraChiliSauce = orderProducts.filter(p => p.id == chiliSauceId);
-    for (const extra of extraChiliSauce) {
-        const { data: chiliStock } = await supabase
-            .from('products')
-            .select('stock')
-            .eq('id', chiliSauceId)
-            .single();
-        await supabase
-            .from('products')
-            .update({ stock: chiliStock.stock - extra.quantity })
-            .eq('id', chiliSauceId);
-    }
-
-    // Insert order
-    const { error } = await supabase
-        .from('orders')
-        .insert({
-            vendor_id: vendorId,
-            order_date: new Date().toISOString(),
-            total_amount: totalAmount,
-            status: 'pending',
-            placed_by: 'vendor',
-            products: orderProducts
-        });
-    if (error) {
-        document.getElementById('loading-modal').style.display = 'none';
-        showMessageModal('Error', 'Error placing order: ' + error.message);
-        return;
-    }
+    const { error } = await supabase.from('orders').insert({
+        vendor_id: vendorId,
+        order_date: new Date().toISOString(),
+        total_amount: totalAmount,
+        status: 'pending',
+        placed_by: 'vendor',
+        products: orderProducts
+    });
+    if (error) return showMessageModal('Error', 'Error placing order: ' + error.message);
 
     document.getElementById('loading-modal').style.display = 'none';
-    showToast('Order placed successfully!', () => {
-        document.getElementById('order-form').reset();
-        document.getElementById('total-amount').textContent = '₱ 0.00';
-        document.getElementById('products-container').innerHTML = `
-            <div class="product-row">
-                <label for="product-0">Product:</label>
-                <select class="product-select" id="product-0" required></select>
-                <div class="quantity-container">
-                    <label for="quantity-0">Quantity:</label>
-                    <input type="number" class="quantity" id="quantity-0" min="1" value="1" required>
-                    <label for="chili-sauce-0" class="chili-sauce-label">Include Chili Sauce:</label>
-                    <input type="checkbox" class="chili-sauce" id="chili-sauce-0" checked>
-                </div>
-                <span class="price" id="price-0"></span>
-                <button type="button" class="remove-btn" onclick="removeProductRow(this)" style="display: none;">Remove</button>
+    showToast('Order placed successfully!', resetForm);
+}
+
+function handleStockError(item) {
+    document.getElementById('loading-modal').style.display = 'none';
+    showMessageModal('Error', `Insufficient stock for ${item}`);
+}
+
+async function updateStock(productId, quantity) {
+    const { data } = await supabase.from('products').select('stock').eq('id', productId).single();
+    await supabase.from('products').update({ stock: data.stock - quantity }).eq('id', productId);
+}
+
+function resetForm() {
+    document.getElementById('order-form').reset();
+    document.getElementById('total-amount').textContent = '₱ 0.00';
+    document.getElementById('products-container').innerHTML = `
+        <div class="product-row">
+            <label for="product-0">Product:</label>
+            <select class="product-select" id="product-0" required></select>
+            <div class="quantity-container">
+                <label for="quantity-0">Quantity:</label>
+                <input type="number" class="quantity" id="quantity-0" min="1" value="1" required>
+                <label for="chili-sauce-0" class="chili-sauce-label">Include Chili Sauce:</label>
+                <input type="checkbox" class="chili-sauce" id="chili-sauce-0" checked>
             </div>
-        `;
-        productRows = 1;
-        populateProducts();
-    });
+            <span class="price" id="price-0"></span>
+            <button type="button" class="remove-btn" onclick="removeProductRow(this)" style="display: none;"></button>
+        </div>
+    `;
+    productRows = 1;
+    populateProducts();
 }
 
-// Pre-fill vendor if vendor_id is in URL
-async function prefillVendor() {
-    if (vendorIdFromUrl) {
-        const { data, error } = await supabase
-            .from('vendors')
-            .select('id, name, agent_id, sales_agents(name)')
-            .eq('id', vendorIdFromUrl)
-            .single();
-        if (error) {
-            console.error('Error fetching vendor:', error.message);
-            return;
-        }
-        document.getElementById('vendor-name').value = data.name;
-        document.getElementById('vendor-id').value = data.id;
-        document.getElementById('agent-name').value = data.sales_agents.name;
-        document.getElementById('vendor-name').setAttribute('readonly', true);
-    }
-}
-
-// Initialize
+// Init
 populateProducts();
-prefillVendor();
