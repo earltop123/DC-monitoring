@@ -23,19 +23,19 @@
             <input type="text" id="agent-name" readonly>
 
             <div id="products-container">
-    <div class="product-row">
-        <label for="product-0">Product:</label>
-        <select class="product-select" id="product-0" required></select>
-        <div class="quantity-container">
-            <label for="quantity-0">Quantity:</label>
-            <input type="number" class="quantity" id="quantity-0" min="1" value="1" required>
-            <label for="chili-sauce-0" class="chili-sauce-label">Include Chili Sauce:</label>
-            <input type="checkbox" class="chili-sauce" id="chili-sauce-0" checked>
-        </div>
-        <span class="price" id="price-0"></span>
-        <button type="button" class="remove-btn" onclick="removeProductRow(this)" style="display: none;">Remove</button>
-    </div>
-</div>
+                <div class="product-row">
+                    <label for="product-0">Product:</label>
+                    <select class="product-select" id="product-0" required></select>
+                    <div class="quantity-container">
+                        <label for="quantity-0">Quantity:</label>
+                        <input type="number" class="quantity" id="quantity-0" min="1" value="1" required>
+                        <label for="chili-sauce-0" class="chili-sauce-label">Include Chili Sauce:</label>
+                        <input type="checkbox" class="chili-sauce" id="chili-sauce-0" checked>
+                    </div>
+                    <span class="price" id="price-0"></span>
+                    <button type="button" class="remove-btn" onclick="removeProductRow(this)" style="display: none;">Remove</button>
+                </div>
+            </div>
             <button type="button" onclick="addProductRow()">Add Another Product</button>
 
             <div class="total">
@@ -67,11 +67,14 @@
         <div class="modal-content">
             <h2 id="message-title"></h2>
             <p id="message-text"></p>
-            <button onclick="closeMessageModal()">OK</button>
+            <button onclick="document.getElementById('message-modal').style.display='none'">OK</button> <!-- Updated inline -->
         </div>
     </div>
 
     <script defer src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script defer src="js/common.js"></script>
     <script defer src="js/order-placement.js"></script>
+    <!-- Cloudflare script (kept as-is for live deployment) -->
+    <script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'924eef2a79bbb040',t:'MTc0Mjc0MzQ1MS4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script>
 </body>
 </html>
