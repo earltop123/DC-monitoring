@@ -1,47 +1,50 @@
 body {
     font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
     margin: 0;
-    padding: 20px;
+    padding: 10px;
     background-color: #f5f7fa;
-    font-size: 18px;
+    font-size: 16px;
     color: #333;
+    min-height: 100vh;
 }
 
 .container {
-    max-width: 800px;
+    width: 100%;
+    max-width: 700px;
     margin: 0 auto;
     background: #ffffff;
-    padding: 30px;
-    border-radius: 12px;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    padding: 15px;
+    border-radius: 8px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
 }
 
 h1 {
     text-align: center;
     color: #2c3e50;
-    font-size: 36px;
-    margin-bottom: 30px;
+    font-size: 24px;
+    margin: 0 0 20px;
 }
 
 h2 {
     color: #2c3e50;
-    font-size: 24px;
-    margin-bottom: 20px;
+    font-size: 18px;
+    margin: 20px 0 10px;
 }
 
 .menu-container {
-    position: relative;
-    display: inline-block;
+    position: absolute;
+    top: 10px;
+    left: 10px;
 }
 
 .menu-btn {
-    padding: 10px 20px;
+    padding: 6px 12px;
     background-color: #dc3545;
     color: white;
     border: none;
-    border-radius: 6px;
+    border-radius: 4px;
     cursor: pointer;
-    font-size: 16px;
+    font-size: 14px;
 }
 
 .menu-btn:hover {
@@ -51,27 +54,27 @@ h2 {
 .menu-content {
     display: none;
     position: absolute;
-    background-color: #f9f9f9;
-    min-width: 160px;
-    box-shadow: 0px 8px 16px 0px rgba(0,0,0,0.2);
-    z-index: 1;
-    border-radius: 6px;
+    background-color: #ffffff;
+    min-width: 140px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    border-radius: 4px;
+    z-index: 10;
 }
 
 .menu-content button {
-    color: black;
-    padding: 12px 16px;
+    color: #333;
+    padding: 8px 12px;
     text-decoration: none;
     display: block;
     background: none;
     border: none;
     width: 100%;
     text-align: left;
-    font-size: 16px;
+    font-size: 14px;
 }
 
 .menu-content button:hover {
-    background-color: #f1f1f1;
+    background-color: #f1f5f9;
 }
 
 .menu-container:hover .menu-content {
@@ -80,15 +83,15 @@ h2 {
 
 .logout-btn {
     position: absolute;
-    top: 20px;
-    right: 20px;
-    padding: 10px 20px;
+    top: 10px;
+    right: 10px;
+    padding: 6px 12px;
     background-color: #dc3545;
     color: white;
     border: none;
-    border-radius: 6px;
+    border-radius: 4px;
     cursor: pointer;
-    font-size: 16px;
+    font-size: 14px;
 }
 
 .logout-btn:hover {
@@ -96,73 +99,75 @@ h2 {
 }
 
 .filter {
-    margin-bottom: 20px;
-    text-align: center;
     display: flex;
+    flex-wrap: wrap;
     justify-content: center;
-    gap: 20px;
+    gap: 10px;
+    margin-bottom: 15px;
 }
 
 .filter label {
     font-weight: 500;
-    margin-right: 10px;
+    font-size: 14px;
+    color: #4b5563;
+    line-height: 30px;
 }
 
 .filter select {
-    padding: 8px;
+    padding: 5px;
     border: 1px solid #d1d5db;
-    border-radius: 6px;
-    font-size: 16px;
-    width: 150px;
+    border-radius: 4px;
+    font-size: 14px;
+    width: 120px;
+    max-width: 100%;
 }
 
 .overview {
     display: flex;
+    flex-wrap: wrap;
     justify-content: center;
-    gap: 20px;
-    margin-bottom: 30px;
+    gap: 15px;
+    margin-bottom: 20px;
 }
 
 .card {
-    background-color: #f9f9f9;
-    padding: 20px;
-    border-radius: 8px;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    background-color: #f9fafb;
+    padding: 10px;
+    border-radius: 6px;
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.05);
     text-align: center;
     flex: 1;
-    max-width: 200px;
+    min-width: 120px;
+    max-width: 150px;
 }
 
 .card h3 {
-    margin: 0 0 10px;
-    font-size: 20px;
+    margin: 0 0 5px;
+    font-size: 14px;
     color: #2c3e50;
 }
 
 .card p {
     margin: 0;
-    font-size: 24px;
-    font-weight: bold;
+    font-size: 18px;
     color: #dc3545;
+    font-weight: 600;
 }
 
 .section {
-    margin-bottom: 30px;
-}
-
-.add-vendor-container {
-    text-align: center;
     margin-bottom: 20px;
 }
 
 .add-vendor-btn {
-    padding: 10px 20px;
+    display: block;
+    margin: 0 auto 10px;
+    padding: 8px 16px;
     background-color: #dc3545;
     color: white;
     border: none;
-    border-radius: 6px;
+    border-radius: 4px;
     cursor: pointer;
-    font-size: 16px;
+    font-size: 14px;
 }
 
 .add-vendor-btn:hover {
@@ -176,19 +181,20 @@ h2 {
 table {
     width: 100%;
     border-collapse: collapse;
-    background-color: #ffffff;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-    border-radius: 8px;
+    background: #ffffff;
+    border-radius: 6px;
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.05);
 }
 
 th, td {
-    padding: 12px 15px;
+    padding: 8px 10px;
     text-align: left;
-    border-bottom: 1px solid #e5e7eb;
+    border-bottom: 1px solid #e2e8f0;
+    font-size: 12px;
 }
 
 th {
-    background-color: #f1f3f5;
+    background-color: #f1f5f9;
     color: #2c3e50;
     font-weight: 600;
 }
@@ -199,9 +205,9 @@ td {
 
 .footer {
     text-align: center;
-    margin-top: 30px;
-    color: #666;
-    font-size: 14px;
+    padding: 10px;
+    font-size: 12px;
+    color: #6b7280;
 }
 
 .modal {
@@ -219,58 +225,77 @@ td {
 
 .modal-content {
     background-color: #ffffff;
-    padding: 20px;
-    border-radius: 8px;
+    padding: 10px;
+    border-radius: 6px;
     width: 90%;
-    max-width: 500px;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+    max-width: 360px; /* Compact for readability */
+    max-height: 85vh;
+    overflow-y: auto;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
 }
 
 .modal-content h2 {
-    margin-top: 0;
+    margin: 0 0 10px;
     color: #2c3e50;
+    font-size: 18px;
 }
 
 .modal-content form {
     display: flex;
     flex-direction: column;
-    gap: 15px;
+    gap: 8px;
+}
+
+.form-group {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
 }
 
 .modal-content label {
     font-weight: 500;
     color: #2c3e50;
+    font-size: 12px;
 }
 
 .modal-content input,
 .modal-content select,
 .modal-content textarea {
-    padding: 8px;
+    padding: 6px;
     border: 1px solid #d1d5db;
     border-radius: 4px;
-    font-size: 16px;
+    font-size: 12px;
+    width: 100%;
+    box-sizing: border-box;
 }
 
 .modal-content textarea {
     resize: vertical;
-    min-height: 100px;
+    min-height: 60px;
+}
+
+.modal-buttons {
+    display: flex;
+    gap: 10px;
+    justify-content: flex-end;
+    margin-top: 10px;
 }
 
 .modal-content button {
-    padding: 10px;
+    padding: 6px 12px;
     border: none;
     border-radius: 4px;
     cursor: pointer;
-    font-size: 16px;
+    font-size: 12px;
 }
 
 .modal-content button[type="submit"] {
-    background-color: #007bff;
+    background-color: #dc3545;
     color: white;
 }
 
 .modal-content button[type="submit"]:hover {
-    background-color: #0056b3;
+    background-color: #c82333;
 }
 
 .modal-content button[type="button"] {
@@ -284,19 +309,19 @@ td {
 
 .toast-container {
     position: fixed;
-    top: 20px;
-    right: 20px;
+    top: 10px;
+    right: 10px;
     z-index: 1000;
 }
 
 .toast {
     background-color: #10b981;
     color: white;
-    padding: 15px 20px;
-    border-radius: 6px;
-    margin-bottom: 10px;
-    font-size: 16px;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+    padding: 10px 15px;
+    border-radius: 4px;
+    margin-bottom: 5px;
+    font-size: 12px;
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.2);
     animation: slideIn 0.5s ease-in-out, fadeOut 0.5s ease-in-out 1.5s forwards;
 }
 
@@ -310,45 +335,64 @@ td {
     to { opacity: 0; }
 }
 
-@media (max-width: 320px) {
+/* Media query for small screens like iPhone 5S (320px) */
+@media (max-width: 360px) {
+    body {
+        padding: 5px;
+    }
     .container {
-        padding: 15px;
+        padding: 10px;
+    }
+    h1 {
+        font-size: 20px;
+    }
+    h2 {
+        font-size: 16px;
+    }
+    .filter {
+        flex-direction: column;
+        align-items: center;
+    }
+    .filter select {
+        width: 100%;
     }
     .overview {
         flex-direction: column;
         align-items: center;
     }
     .card {
+        min-width: 100%;
         max-width: 100%;
-        width: 100%;
     }
-    .logout-btn {
-        top: 10px;
-        right: 10px;
-    }
-    .toast-container {
-        top: 10px;
-        right: 10px;
-        width: 90%;
-    }
-    .toast {
-        font-size: 14px;
-    }
-    .filter {
-        flex-direction: column;
-        gap: 10px;
-    }
-    .filter select {
-        width: 100%;
-    }
-    table {
-        font-size: 14px;
+    .add-vendor-btn {
+        padding: 6px 12px;
+        font-size: 12px;
     }
     th, td {
-        padding: 8px 10px;
+        padding: 6px 8px;
+        font-size: 10px;
     }
     .modal-content {
-        padding: 15px;
         width: 95%;
+        max-width: 300px;
+        padding: 8px;
+    }
+    .modal-content h2 {
+        font-size: 16px;
+    }
+    .modal-content label,
+    .modal-content input,
+    .modal-content select,
+    .modal-content textarea,
+    .modal-content button {
+        font-size: 11px;
+    }
+    .modal-content input,
+    .modal-content select,
+    .modal-content textarea {
+        padding: 5px;
+    }
+    .modal-content button {
+        padding: 5px 10px;
     }
 }
