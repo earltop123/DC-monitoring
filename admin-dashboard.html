@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Dashboard</title>
+    <link rel="stylesheet" href="css/admin-dashboard.css">
+</head>
+<body>
+<div class="toast-container" id="toast-container"></div>
+    <!-- Menu container will be populated by renderMenu -->
+    <div class="menu-container"></div>
+
+    <button class="logout-btn" onclick="logout()">Logout</button>
+
+    <div class="container">
+        <h1>Admin Dashboard</h1>
+        <div class="filters">
+            <label for="agent-filter">Filter by Agent:</label>
+            <select id="agent-filter">
+                <option value="">All Agents</option>
+            </select>
+        </div>
+
+        <div class="overview">
+            <div class="card">
+                <h3>Total Vendors</h3>
+                <p id="total-vendors">0</p>
+            </div>
+            <div class="card">
+                <h3>Total Orders</h3>
+                <p id="total-orders">0</p>
+            </div>
+        </div>
+
+        <div class="section">
+            <h2>Vendors</h2>
+            <button onclick="openAddVendorModal()">Add Vendor</button>
+            <div class="table-wrapper">
+                <table id="vendor-table">
+                    <thead>
+                        <tr>
+                            <th>Name</th>
+                            <th>Address</th>
+                            <th>Contact Number</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody></tbody>
+                </table>
+            </div>
+        </div>
+
+        <div class="section">
+            <h2>Orders</h2>
+            <div class="table-wrapper">
+                <table id="order-table">
+                    <thead>
+                        <tr>
+                            <th>Vendor Name</th>
+                            <th>Order Date</th>
+                            <th>Total Amount</th>
+                            <th>Status</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody></tbody>
+                </table>
+            </div>
+        </div>
+
+        <div class="section">
+            <h2>Vendor Addition Log</h2>
+            <div class="table-wrapper">
+                <table id="vendor-log-table">
+                    <thead>
+                        <tr>
+                            <th>Vendor Name</th>
+                            <th>Address</th>
+                            <th>Contact Number</th>
+                            <th>Delivered Orders</th>
+                            <th>Days Since Last Order</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody></tbody>
+                </table>
+            </div>
+            <div class="pagination">
+                <button id="prev-page" disabled>Previous Page</button>
+                <span id="page-info">Page 1</span>
+                <button id="next-page" disabled>Next Page</button>
+            </div>
+        </div>
+    </div>
+
+    <footer class="footer">
+        <p>© 2025 EandA Distribution. All rights reserved.</p>
+    </footer>
+
+    <!-- Modals remain unchanged -->
+    <div id="add-vendor-modal" class="modal" style="display: none;">
+        <div class="modal-content">
+            <h2>Add Vendor</h2>
+            <form id="add-vendor-form">
+                <label for="vendor-agent">Agent:</label>
+                <select id="vendor-agent" required></select>
+                <label for="vendor-name">Vendor Name:</label>
+                <input type="text" id="vendor-name" required>
+                <label for="vendor-address">Address:</label>
+                <input type="text" id="vendor-address" required>
+                <label for="vendor-contact">Contact Number:</label>
+                <input type="text" id="vendor-contact" required>
+                <label for="vendor-landmark">Landmark:</label>
+                <input type="text" id="vendor-landmark">
+                <label for="vendor-steamer">Deployed Steamer:</label>
+                <select id="vendor-steamer">
+                    <option value="Yes">Yes</option>
+                    <option value="No">No</option>
+                </select>
+                <label for="vendor-cart">Deployed Food Cart:</label>
+                <select id="vendor-cart">
+                    <option value="Yes">Yes</option>
+                    <option value="No">No</option>
+                </select>
+                <label for="vendor-notes">Notes:</label>
+                <textarea id="vendor-notes"></textarea>
+                <button type="submit">Add Vendor</button>
+                <button type="button" onclick="closeAddVendorModal()">Cancel</button>
+            </form>
+        </div>
+    </div>
+
+    <div id="edit-vendor-modal" class="modal" style="display: none;">
+        <div class="modal-content">
+            <h2>Edit Vendor</h2>
+            <form id="edit-vendor-form">
+                <input type="hidden" id="edit-vendor-id">
+                <label for="edit-vendor-agent">Agent:</label>
+                <select id="edit-vendor-agent" required></select>
+                <label for="edit-vendor-name">Vendor Name:</label>
+                <input type="text" id="edit-vendor-name" required>
+                <label for="edit-vendor-address">Address:</label>
+                <input type="text" id="edit-vendor-address" required>
+                <label for="edit-vendor-contact">Contact Number:</label>
+                <input type="text" id="edit-vendor-contact" required>
+                <label for="edit-vendor-landmark">Landmark:</label>
+                <input type="text" id="edit-vendor-landmark">
+                <label for="edit-vendor-steamer">Deployed Steamer:</label>
+                <select id="edit-vendor-steamer">
+                    <option value="Yes">Yes</option>
+                    <option value="No">No</option>
+                </select>
+                <label for="edit-vendor-cart">Deployed Food Cart:</label>
+                <select id="edit-vendor-cart">
+                    <option value="Yes">Yes</option>
+                    <option value="No">No</option>
+                </select>
+                <label for="edit-vendor-notes">Notes:</label>
+                <textarea id="edit-vendor-notes"></textarea>
+                <button type="submit">Update Vendor</button>
+                <button type="button" onclick="closeEditVendorModal()">Cancel</button>
+            </form>
+        </div>
+    </div>
+
+    <div id="edit-order-modal" class="modal" style="display: none;">
+        <div class="modal-content">
+            <h2>Edit Order</h2>
+            <form id="edit-order-form">
+                <input type="hidden" id="edit-order-id">
+                <label for="edit-order-vendor">Vendor:</label>
+                <select id="edit-order-vendor" required></select>
+                <label for="edit-order-date">Order Date:</label>
+                <input type="datetime-local" id="edit-order-date" required>
+                <label for="edit-order-amount">Total Amount:</label>
+                <input type="number" id="edit-order-amount" step="0.01" min="0" required>
+                <label for="edit-order-status">Status:</label>
+                <select id="edit-order-status">
+                    <option value="pending">Pending</option>
+                    <option value="delivered">Delivered</option>
+                    <option value="cancelled">Cancelled</option>
+                </select>
+                <button type="submit">Update Order</button>
+                <button type="button" onclick="closeEditOrderModal()">Cancel</button>
+            </form>
+        </div>
+    </div>
+
+    <div id="history-modal" class="modal" style="display: none;">
+        <div class="modal-content">
+            <h2>Change History</h2>
+            <div class="table-wrapper">
+                <table id="history-table">
+                    <thead>
+                        <tr>
+                            <th>Change Type</th>
+                            <th>Details</th>
+                            <th>Changed At</th>
+                        </tr>
+                    </thead>
+                    <tbody></tbody>
+                </table>
+            </div>
+            <button onclick="closeHistoryModal()">Close</button>
+        </div>
+    </div>
+
+    <div id="loading-modal" class="modal" style="display: none;">
+        <div class="modal-content">
+            <h2>Loading...</h2>
+            <p>Please wait while the operation is being processed.</p>
+        </div>
+    </div>
+
+    <script defer src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script defer src="js/common.js"></script>
+    <script defer src="js/admin-dashboard.js"></script>
+    <script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'924ed978f8f8bd49',t:'MTc0Mjc0MjU2Mi4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script>
+</body>
+</html>

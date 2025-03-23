@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Delivery Management</title>
+    <link rel="stylesheet" href="css/delivery-management.css">
+</head>
+<body>
+    <div class="toast-container" id="toast-container"></div>
+
+    <div class="menu-container">
+        <button class="menu-btn">Menu</button>
+        <div class="menu-content">
+            <button onclick="navigateTo('products')">Product Management</button>
+            <button onclick="navigateTo('vendors')">Vendor Activity</button>
+            <button onclick="navigateTo('sales')">Sales Dashboard</button>
+        </div>
+    </div>
+
+    <button class="logout-btn" onclick="logout()">Logout</button>
+
+    <div class="container">
+        <h1>Delivery Management</h1>
+
+        <div class="filters">
+            <label for="status-filter">Filter by Status:</label>
+            <select id="status-filter">
+                <option value="pending">Pending</option>
+                <option value="delivered">Delivered</option>
+                <option value="cancelled">Cancelled</option>
+            </select>
+        </div>
+
+        <div class="section">
+            <div id="order-list"></div>
+        </div>
+    </div>
+
+    <footer class="footer">
+        <p>© 2025 EandA Distribution. All rights reserved.</p>
+    </footer>
+
+    <div id="partial-payment-modal" class="modal" style="display: none;">
+        <div class="modal-content">
+            <h2>Partial Payment Details</h2>
+            <form id="partial-payment-form">
+                <input type="hidden" id="partial-order-id">
+                <label for="partial-amount-paid">Amount Paid:</label>
+                <input type="number" id="partial-amount-paid" min="0" step="0.01" required>
+                <label for="partial-payment-method">Payment Method:</label>
+                <select id="partial-payment-method" required>
+                    <option value="Cash">Cash</option>
+                    <option value="Online">Online</option>
+                </select>
+                <button type="submit">Confirm</button>
+                <button type="button" onclick="closePartialPaymentModal()">Cancel</button>
+            </form>
+        </div>
+    </div>
+
+    <div id="loading-modal" class="modal" style="display: none;">
+        <div class="modal-content">
+            <h2>Loading...</h2>
+            <p>Please wait while the operation is being processed.</p>
+        </div>
+    </div>
+
+    <div id="message-modal" class="modal" style="display: none;">
+        <div class="modal-content">
+            <h2 id="message-title"></h2>
+            <p id="message-text"></p>
+            <button onclick="closeMessageModal()">OK</button>
+        </div>
+    </div>
+
+    <script defer src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script defer src="js/delivery-management.js"></script>
+</body>
+</html>

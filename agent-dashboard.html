@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sales Agent Summary</title>
+    <link rel="stylesheet" href="css/agent-dashboard.css">
+</head>
+<body>
+    <div class="toast-container" id="toast-container"></div>
+
+    <div class="menu-container">
+        <button class="menu-btn">Menu</button>
+        <div class="menu-content">
+        </div>
+    </div>
+
+    <button class="logout-btn" onclick="logout()">Logout</button>
+
+    <div class="container">
+        <h1>Sales Agent Summary</h1>
+
+        <div class="filter">
+            <label for="month-filter">Month:</label>
+            <select id="month-filter">
+                <option value="all">All Months</option>
+                <option value="1">January</option>
+                <option value="2">February</option>
+                <option value="3">March</option>
+                <option value="4">April</option>
+                <option value="5">May</option>
+                <option value="6">June</option>
+                <option value="7">July</option>
+                <option value="8">August</option>
+                <option value="9">September</option>
+                <option value="10">October</option>
+                <option value="11">November</option>
+                <option value="12">December</option>
+            </select>
+
+            <label for="year-filter">Year:</label>
+            <select id="year-filter">
+                <option value="all">All Years</option>
+                <option value="2025">2025</option>
+                <option value="2026">2026</option>
+                <option value="2027">2027</option>
+                <option value="2028">2028</option>
+                <option value="2029">2029</option>
+                <option value="2030">2030</option>
+            </select>
+        </div>
+
+        <div class="overview">
+            <div class="card">
+                <h3>Total Vendors</h3>
+                <p id="total-vendors">0</p>
+            </div>
+            <div class="card">
+                <h3>Total Orders</h3>
+                <p id="total-orders">0</p>
+            </div>
+        </div>
+
+        <div class="section">
+            <div class="add-vendor-container">
+                <button class="add-vendor-btn" onclick="openAddVendorModal()">Add Vendor</button>
+            </div>
+            <h2>Top 10 Vendors by Orders</h2>
+            <div class="table-wrapper">
+                <table id="top-vendors-table">
+                    <thead>
+                        <tr>
+                            <th>Vendor Name</th>
+                            <th>Total Stocks Ordered</th>
+                            <th>Last Date Ordered</th>
+                        </tr>
+                    </thead>
+                    <tbody></tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <footer class="footer">
+        <p>© 2025 EandA Distribution. All rights reserved.</p>
+    </footer>
+
+    <div id="add-vendor-modal" class="modal" style="display: none;">
+        <div class="modal-content">
+            <h2>Add Vendor</h2>
+            <form id="add-vendor-form">
+                <input type="hidden" id="vendor-agent">
+                <label for="vendor-name">Vendor Name:</label>
+                <input type="text" id="vendor-name" required>
+                <label for="vendor-address">Address:</label>
+                <input type="text" id="vendor-address" required>
+                <label for="vendor-contact">Contact Number:</label>
+                <input type="text" id="vendor-contact" required>
+                <label for="vendor-landmark">Landmark:</label>
+                <input type="text" id="vendor-landmark">
+                <label for="vendor-steamer">Deployed Steamer:</label>
+                <select id="vendor-steamer">
+                    <option value="Yes">Yes</option>
+                    <option value="No">No</option>
+                </select>
+                <label for="vendor-cart">Deployed Food Cart:</label>
+                <select id="vendor-cart">
+                    <option value="Yes">Yes</option>
+                    <option value="No">No</option>
+                </select>
+                <label for="vendor-notes">Notes:</label>
+                <textarea id="vendor-notes"></textarea>
+                <button type="submit">Add Vendor</button>
+                <button type="button" onclick="closeAddVendorModal()">Cancel</button>
+            </form>
+        </div>
+    </div>
+
+    <div id="loading-modal" class="modal" style="display: none;">
+        <div class="modal-content">
+            <h2>Loading...</h2>
+            <p>Please wait while the operation is being processed.</p>
+        </div>
+    </div>
+
+    <script defer src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script defer src="js/common.js"></script>
+    <script defer src="js/agent-dashboard.js"></script>
+</body>
+</html>

@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Management Team Dashboard</title>
+    <link rel="stylesheet" href="css/management-dashboard.css">
+</head>
+<body>
+    <div class="toast-container" id="toast-container"></div>
+
+    <div class="menu-container">
+        <button class="menu-btn">Menu</button>
+        <div class="menu-content">
+            <button onclick="navigateTo('products')">Product Management</button>
+            <button onclick="navigateTo('vendors')">Vendor Activity</button>
+            <button onclick="navigateTo('sales')">Sales Dashboard</button>
+        </div>
+    </div>
+
+    <button class="logout-btn" onclick="logout()">Logout</button>
+
+    <div class="container">
+        <h1>Management Team Dashboard</h1>
+
+        <div class="overview">
+            <div class="card">
+                <h3>Total Vendors</h3>
+                <p id="total-vendors">0</p>
+            </div>
+            <div class="card">
+                <h3>Total Packs</h3>
+                <p id="total-packs">0</p>
+            </div>
+        </div>
+
+        <div class="filter">
+            <label for="agent-filter">Filter by Agent:</label>
+            <select id="agent-filter"></select>
+        </div>
+
+        <div class="section">
+            <h2>Vendor List</h2>
+            <div class="table-wrapper">
+                <table id="vendor-table">
+                    <thead>
+                        <tr>
+                            <th>Name</th>
+                            <th>Address</th>
+                            <th>Contact Number</th>
+                            <th>Agent</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody></tbody>
+                </table>
+            </div>
+            <div class="pagination">
+                <button id="prev-page" disabled>Previous Page</button>
+                <span id="page-info">Page 1</span>
+                <button id="next-page" disabled>Next Page</button>
+            </div>
+        </div>
+    </div>
+
+    <footer class="footer">
+        <p>© 2025 EandA Distribution. All rights reserved.</p>
+    </footer>
+
+    <div id="history-modal" class="modal" style="display: none;">
+        <div class="modal-content"></div>
+    </div>
+
+    <script defer src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script defer src="js/common.js"></script>
+    <script defer src="js/management-dashboard.js"></script>
+</body>
+</html>
