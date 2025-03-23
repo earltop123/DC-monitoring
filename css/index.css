@@ -1,0 +1,111 @@
+body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    margin: 0;
+    padding: 0;
+    background-color: #f5f7fa;
+    color: #333;
+    position: relative; /* For background positioning */
+    min-height: 100vh; /* Ensure full height */
+}
+
+.background {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: url('https://via.placeholder.com/1920x1080') no-repeat center center fixed; /* Placeholder image */
+    background-size: cover;
+    opacity: 0.3; /* 30% opacity */
+    z-index: -1; /* Behind content */
+}
+
+main {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-height: calc(100vh - 60px); /* Adjust for footer */
+    padding: 20px;
+}
+
+.welcome {
+    text-align: center;
+    margin-bottom: 40px;
+}
+
+.welcome h2 {
+    color: #2c3e50;
+    font-size: 36px;
+    margin: 0 0 10px;
+}
+
+.welcome p {
+    font-size: 18px;
+    color: #4b5563;
+    margin: 0;
+}
+
+.menu-grid {
+    display: flex;
+    gap: 20px;
+    justify-content: center;
+    flex-wrap: wrap;
+}
+
+.menu-card {
+    background: #ffffff;
+    padding: 20px 40px;
+    border-radius: 8px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    text-align: center;
+    transition: transform 0.3s, box-shadow 0.3s;
+}
+
+.menu-card a {
+    text-decoration: none;
+    color: #2c3e50;
+    font-size: 18px;
+    font-weight: 500;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.menu-card i {
+    font-size: 24px;
+    color: #dc3545;
+}
+
+.menu-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 6px 16px rgba(0, 0, 0, 0.15);
+}
+
+footer {
+    text-align: center;
+    padding: 20px;
+    font-size: 14px;
+    color: #6b7280;
+    background: #ffffff;
+    position: absolute;
+    bottom: 0;
+    width: 100%;
+}
+
+@media (max-width: 600px) {
+    .menu-grid {
+        flex-direction: column;
+        align-items: center;
+    }
+    .menu-card {
+        width: 80%;
+        padding: 15px 30px;
+    }
+    .welcome h2 {
+        font-size: 28px;
+    }
+    .welcome p {
+        font-size: 16px;
+    }
+}
