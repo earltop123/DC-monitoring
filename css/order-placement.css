@@ -1,0 +1,343 @@
+body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    margin: 0;
+    padding: 15px; /* Reduced padding for smaller screens */
+    background-color: #f5f7fa;
+    font-size: 16px; /* Slightly smaller base font for mobile */
+    color: #333;
+}
+
+.container {
+    max-width: 100%; /* Ensure it fits the screen */
+    margin: 0 auto;
+    background: #ffffff;
+    padding: 20px; /* Reduced padding */
+    border-radius: 12px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+h1 {
+    text-align: center;
+    color: #2c3e50;
+    font-size: 28px; /* Smaller heading for mobile */
+    margin-bottom: 20px;
+}
+
+form {
+    display: flex;
+    flex-direction: column;
+    gap: 10px; /* Reduced gap */
+}
+
+label {
+    font-weight: 500;
+    font-size: 16px; /* Smaller labels */
+    color: #4b5563;
+}
+
+input, select {
+    padding: 10px; /* Reduced padding */
+    border: 1px solid #d1d5db;
+    border-radius: 6px;
+    font-size: 16px;
+    width: 100%; /* Full width for inputs */
+    box-sizing: border-box; /* Prevent overflow */
+}
+
+input:focus, select:focus {
+    border-color: #dc3545;
+    outline: none;
+}
+
+input[readonly] {
+    background-color: #e9ecef;
+}
+
+.vendor-input-container {
+    position: relative;
+    width: 100%;
+}
+
+.vendor-input-container input {
+    width: 100%;
+}
+
+.suggestions {
+    position: absolute;
+    background: white;
+    border: 1px solid #d1d5db;
+    border-radius: 6px;
+    max-height: 150px; /* Reduced height for smaller screens */
+    overflow-y: auto;
+    z-index: 1000;
+    width: 100%;
+}
+
+.suggestion-item {
+    padding: 8px; /* Reduced padding */
+    cursor: pointer;
+}
+
+.suggestion-item:hover {
+    background-color: #f1f5f9;
+}
+
+.product-row {
+    display: flex;
+    flex-direction: column; /* Stack elements vertically on mobile */
+    gap: 10px;
+    align-items: stretch;
+    border-bottom: 1px solid #e2e8f0;
+    padding-bottom: 10px;
+}
+
+.product-row select {
+    width: 100%; /* Full width for product dropdown */
+    min-width: 0;
+}
+
+.product-row .quantity-container {
+    display: flex;
+    align-items: center;
+    gap: 10px; /* Space between quantity field and checkbox */
+}
+
+.product-row .quantity {
+    width: 80px; /* Reduced width for quantity field */
+    min-width: 0;
+}
+
+.product-row .chili-sauce-label,
+.product-row .chili-sauce {
+    display: inline-block;
+    margin: 0; /* Remove default margins for better alignment */
+}
+
+.product-row .chili-sauce-label {
+    font-size: 14px; /* Smaller label for better fit */
+}
+
+.product-row .chili-sauce {
+    width: 20px; /* Smaller checkbox */
+    height: 20px;
+}
+
+.product-row .price {
+    font-size: 14px;
+    color: #dc3545;
+    text-align: right;
+}
+
+.product-row .remove-btn {
+    padding: 8px 16px;
+    background-color: #dc3545;
+    color: white;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 14px;
+    width: 100%;
+}
+
+.product-row .remove-btn:hover {
+    background-color: #c82333;
+}
+
+/* Ensure mobile layout remains clean */
+@media (max-width: 320px) {
+    .product-row .quantity-container {
+        flex-wrap: wrap; /* Allow wrapping if needed on very small screens */
+    }
+    .product-row .quantity {
+        width: 60px; /* Even smaller on very small screens */
+    }
+    .product-row .chili-sauce-label {
+        font-size: 12px;
+    }
+    .product-row .chili-sauce {
+        width: 18px;
+        height: 18px;
+    }
+}
+
+button[type="button"] {
+    padding: 10px 20px; /* Reduced padding */
+    background-color: #10b981;
+    color: white;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 16px;
+    width: 100%; /* Full width */
+}
+
+button[type="button"]:hover {
+    background-color: #059669;
+}
+
+button[type="submit"] {
+    padding: 10px 20px;
+    background-color: #dc3545;
+    color: white;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 16px;
+    width: 100%;
+}
+
+button[type="submit"]:hover {
+    background-color: #c82333;
+}
+
+.total {
+    display: flex;
+    justify-content: space-between;
+    font-size: 18px; /* Smaller font */
+    font-weight: 500;
+    color: #2c3e50;
+    margin-top: 15px;
+}
+
+.total span {
+    color: #dc3545;
+}
+
+.modal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.5);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.modal-content {
+    background-color: #ffffff;
+    padding: 20px; /* Reduced padding */
+    border-radius: 12px;
+    max-width: 90%;
+    width: 90%;
+    max-height: 80vh;
+    overflow-y: auto;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.modal-content h2 {
+    margin-top: 0;
+    font-size: 24px; /* Smaller heading */
+    color: #2c3e50;
+    font-weight: 500;
+}
+
+.modal-content p {
+    font-size: 16px;
+    color: #4b5563;
+    margin: 8px 0;
+}
+
+.modal-content button {
+    padding: 10px 20px;
+    background-color: #dc3545;
+    color: white;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 16px;
+    margin: 8px;
+    width: 100%; /* Full width */
+}
+
+.modal-content button:hover {
+    background-color: #c82333;
+}
+
+.modal-content button:nth-child(1) {
+    background-color: #10b981;
+}
+
+.modal-content button:nth-child(1):hover {
+    background-color: #059669;
+}
+
+.toast-container {
+    position: fixed;
+    top: 10px;
+    right: 10px;
+    z-index: 1000;
+    width: 90%; /* Fit to screen */
+}
+
+.toast {
+    background-color: #10b981;
+    color: white;
+    padding: 10px 15px;
+    border-radius: 6px;
+    margin-bottom: 8px;
+    font-size: 14px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+    animation: slideIn 0.5s ease-in-out, fadeOut 0.5s ease-in-out 1.5s forwards;
+}
+
+@keyframes slideIn {
+    from { transform: translateX(100%); opacity: 0; }
+    to { transform: translateX(0); opacity: 1; }
+}
+
+@keyframes fadeOut {
+    from { opacity: 1; }
+    to { opacity: 0; }
+}
+
+/* Media query for very small screens (like iPhone 5/5S) */
+@media (max-width: 320px) {
+    body {
+        padding: 10px;
+    }
+    .container {
+        padding: 15px;
+    }
+    h1 {
+        font-size: 24px;
+    }
+    label {
+        font-size: 14px;
+    }
+    input, select, button {
+        font-size: 14px;
+        padding: 8px;
+    }
+    .product-row {
+        gap: 8px;
+    }
+    .product-row .price {
+        font-size: 12px;
+    }
+    .product-row .remove-btn {
+        padding: 6px 12px;
+        font-size: 12px;
+    }
+    .total {
+        font-size: 16px;
+    }
+    .modal-content {
+        padding: 15px;
+    }
+    .modal-content h2 {
+        font-size: 20px;
+    }
+    .modal-content p {
+        font-size: 14px;
+    }
+    .modal-content button {
+        padding: 8px 16px;
+        font-size: 14px;
+    }
+    .toast {
+        font-size: 12px;
+        padding: 8px 12px;
+    }
+}
