@@ -1,475 +1,314 @@
-body {
-    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-    margin: 0;
-    padding: 10px; /* Reduced padding for small screens */
-    background-color: #f5f7fa;
-    font-size: 16px; /* Slightly smaller base font size */
-    color: #333;
-}
+// Maintain a map of expanded states
+let expandedStates = {};
 
-.container {
-    width: 100%; /* Full width on small screens */
-    max-width: none;
-    min-width: 280px; /* Slightly smaller min-width */
-    margin: 0 auto;
-    background: #ffffff;
-    padding: 15px; /* Reduced padding */
-    border-radius: 8px;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-}
+// Fetch and display orders
+async function fetchOrders(statusFilter = 'pending', sortOrder = 'desc') {
+    const { data: orders, error } = await supabase
+        .from('orders')
+        .select('*, vendors(name, contact_number), sales_agents(name)') // Add contact_number
+        .eq('status', statusFilter)
+        .order('order_date', { ascending: sortOrder === 'asc' });
 
-h1 {
-    text-align: center;
-    color: #2c3e50;
-    font-size: 24px; /* Smaller heading */
-    margin-bottom: 15px;
-    font-weight: 600;
-}
-
-.filters {
-    margin: 15px 0;
-    display: flex;
-    justify-content: center;
-    gap: 8px;
-    flex-wrap: wrap;
-}
-
-.filters label {
-    font-size: 16px; /* Smaller label */
-    font-weight: 500;
-    color: #4b5563;
-}
-
-.filters select {
-    padding: 8px;
-    border: 1px solid #d1d5db;
-    border-radius: 6px;
-    font-size: 16px;
-    background-color: #fff;
-    cursor: pointer;
-    width: 100%; /* Full width on small screens */
-    max-width: 200px;
-}
-
-.order-box {
-    margin-bottom: 10px;
-    border: 1px solid #d1d5db;
-    border-radius: 6px;
-    background-color: #fff;
-    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.05);
-}
-
-.order-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 10px;
-    background-color: #f9fafb;
-    border-bottom: 1px solid #d1d5db;
-    cursor: pointer;
-}
-
-.order-header h3 {
-    margin: 0;
-    font-size: 16px; /* Smaller vendor name */
-    color: #2c3e50;
-    font-weight: 500;
-}
-
-.order-header .status {
-    padding: 4px 8px;
-    border-radius: 10px;
-    font-size: 12px;
-    font-weight: 500;
-    text-transform: uppercase;
-}
-
-.order-header .status.pending {
-    background-color: #f7e4a3;
-    color: #856404;
-}
-
-.order-header .status.delivered {
-    background-color: #c3e6cb;
-    color: #155724;
-}
-
-.order-header .status.cancelled {
-    background-color: #f5c6cb;
-    color: #721c24;
-}
-
-.order-header .toggle-icon {
-    font-size: 16px;
-    color: #4b5563;
-    min-width: 20px; /* Ensure tappable area */
-    text-align: center;
-}
-
-.order-details {
-    padding: 10px;
-    display: none;
-}
-
-.order-details p {
-    margin: 4px 0;
-    font-size: 14px; /* Smaller text */
-    color: #4b5563;
-}
-
-.order-details p strong {
-    color: #2c3e50;
-}
-
-.order-details select {
-    padding: 8px;
-    border: 1px solid #d1d5db;
-    border-radius: 6px;
-    font-size: 14px;
-    width: 100%;
-    margin-top: 8px;
-    cursor: pointer;
-}
-
-.order-details .actions {
-    display: flex;
-    gap: 8px;
-    margin-top: 10px;
-    flex-wrap: wrap; /* Allow buttons to wrap */
-}
-
-.order-details button {
-    padding: 8px 16px;
-    border: none;
-    border-radius: 6px;
-    cursor: pointer;
-    font-size: 14px;
-    flex: 1; /* Buttons take equal space */
-    min-height: 44px; /* Touch-friendly height */
-}
-
-.order-details .delivered-btn {
-    background-color: #10b981;
-    color: white;
-}
-
-.order-details .delivered-btn:hover {
-    background-color: #059669;
-}
-
-.order-details .delivered-btn:disabled {
-    background-color: #d1d5db;
-    cursor: not-allowed;
-}
-
-.order-details .cancel-btn {
-    background-color: #dc3545;
-    color: white;
-}
-
-.order-details .cancel-btn:hover {
-    background-color: #c82333;
-}
-
-.modal {
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background-color: rgba(0, 0, 0, 0.5);
-    /*display: flex !important; /* Temporary for debugging */
-    justify-content: center;
-    align-items: center;
-    z-index: 1000;
-}
-
-.modal-content {
-    background-color: #ffffff;
-    padding: 15px;
-    border-radius: 8px;
-    max-width: 90%; /* Fit within small screens */
-    width: 100%;
-    max-height: 80vh;
-    overflow-y: auto;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
-}
-
-.modal-content h2 {
-    margin-top: 0;
-    font-size: 20px; /* Smaller modal heading */
-    color: #2c3e50;
-    font-weight: 500;
-}
-
-.modal-content form {
-    display: flex;
-    flex-direction: column;
-    gap: 10px;
-}
-
-.modal-content label {
-    font-weight: 500;
-    font-size: 16px;
-    color: #4b5563;
-}
-
-.modal-content input, .modal-content select {
-    padding: 8px;
-    border: 1px solid #d1d5db;
-    border-radius: 6px;
-    font-size: 14px;
-}
-
-.modal-content button {
-    padding: 10px 20px;
-    background-color: #dc3545;
-    color: white;
-    border: none;
-    border-radius: 6px;
-    cursor: pointer;
-    font-size: 14px;
-    margin: 5px 0;
-    min-height: 44px; /* Touch-friendly */
-}
-
-.modal-content button:hover {
-    background-color: #c82333;
-}
-
-.modal-content button:nth-child(1) {
-    background-color: #10b981;
-}
-
-.modal-content button:nth-child(1):hover {
-    background-color: #059669;
-}
-
-.footer {
-    text-align: center;
-    margin-top: 20px;
-    padding: 10px 0;
-    font-size: 14px;
-    color: #6b7280;
-    border-top: 1px solid #e2e8f0;
-}
-
-.menu-container {
-    position: fixed; /* Fixed to stay visible */
-    top: 10px;
-    left: 10px;
-    z-index: 1000;
-}
-
-.menu-btn {
-    padding: 8px 16px;
-    background-color: #dc3545;
-    color: white;
-    border: none;
-    border-radius: 6px;
-    cursor: pointer;
-    font-size: 16px;
-    min-height: 44px; /* Touch-friendly */
-}
-
-.menu-btn:hover {
-    background-color: #c82333;
-}
-
-.menu-content {
-    display: none;
-    position: absolute;
-    top: 100%;
-    left: 0;
-    background-color: #ffffff;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
-    border-radius: 6px;
-    padding: 5px 0;
-    min-width: 180px;
-    max-height: 200px; /* Prevent overflow */
-    overflow-y: auto; /* Scrollable menu */
-}
-
-.menu-container:hover .menu-content {
-    display: block;
-}
-
-.menu-content button {
-    display: block;
-    width: 100%;
-    padding: 8px 15px;
-    background: none;
-    border: none;
-    text-align: left;
-    font-size: 14px;
-    color: #2c3e50;
-    cursor: pointer;
-    min-height: 44px; /* Touch-friendly */
-}
-
-.menu-content button:hover {
-    background-color: #f1f5f9;
-}
-
-.logout-btn {
-    position: fixed; /* Fixed to stay visible */
-    top: 10px;
-    right: 10px;
-    padding: 8px 16px;
-    background-color: #dc3545;
-    color: white;
-    border: none;
-    border-radius: 6px;
-    cursor: pointer;
-    font-size: 16px;
-    min-height: 44px; /* Touch-friendly */
-    z-index: 1000;
-}
-
-.logout-btn:hover {
-    background-color: #c82333;
-}
-
-.toast-container {
-    position: fixed;
-    top: 10px;
-    right: 10px;
-    z-index: 1000;
-    width: 90%; /* Fit within small screens */
-    max-width: 280px;
-}
-
-.toast {
-    background-color: #10b981;
-    color: white;
-    padding: 10px 15px;
-    border-radius: 6px;
-    margin-bottom: 8px;
-    font-size: 14px;
-    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.2);
-    animation: slideIn 0.5s ease-in-out, fadeOut 0.5s ease-in-out 1.5s forwards;
-}
-
-@keyframes slideIn {
-    from { transform: translateX(100%); opacity: 0; }
-    to { transform: translateX(0); opacity: 1; }
-}
-
-@keyframes fadeOut {
-    from { opacity: 1; }
-    to { opacity: 0; }
-}
-
-/* Media Query for iPhone 5S and similar small screens */
-@media (max-width: 320px) {
-    body {
-        padding: 5px;
+    if (error) {
+        showMessageModal('Error', 'Error fetching orders: ' + error.message);
+        return;
     }
 
-    .container {
-        padding: 10px;
-        min-width: 0; /* Remove min-width constraint */
-    }
+    renderOrders(orders);
+}
 
-    h1 {
-        font-size: 20px;
-        margin-bottom: 10px;
-    }
+// Render orders with preserved expand/collapse state
+function renderOrders(orders) {
+    const orderList = document.getElementById('order-list');
+    orderList.innerHTML = '';
+    orders.forEach(order => {
+        const productsList = order.products.map(p => {
+            const baseName = p.name === 'Chili Sauce (100grams)' ? 'Extra Chili Sauce (100 Grams)' : p.name;
+            const displayName = p.chili_sauce ? `${baseName} with Chili Sauce` : baseName;
+            const chiliSaucePrice = order.products.some(prod => prod.name === 'Chili Sauce (100grams)') 
+                ? order.products.find(prod => prod.name === 'Chili Sauce (100grams)').price 
+                : 0;
+            const unitPrice = p.chili_sauce && p.name !== 'Chili Sauce (100grams)' 
+                ? p.price + chiliSaucePrice 
+                : p.price;
+            const totalPrice = unitPrice * p.quantity;
+            const unit = p.quantity === 1 ? 'pack' : 'packs';
+            return `${displayName} (₱ ${unitPrice.toFixed(2)} x ${p.quantity} ${unit}) = ₱ ${totalPrice.toFixed(2)}`;
+        }).join(', ');
 
-    .filters label, .filters select {
-        font-size: 14px;
-    }
+        const lastUpdated = order.payment_updated_at ? new Date(order.payment_updated_at) : new Date(order.order_date);
+        const lastUpdatedStr = lastUpdated.toLocaleString('en-US', { timeZone: 'Asia/Manila', month: 'short', day: 'numeric', year: 'numeric', hour: 'numeric', minute: 'numeric', hour12: true });
 
-    .filters select {
-        padding: 6px;
-        max-width: 100%; /* Full width */
-    }
+        const contactNumber = order.vendors.contact_number || 'N/A';
+        const contactLink = contactNumber !== 'N/A' 
+            ? `<a href="tel:${contactNumber}" class="contact-link">${contactNumber}</a>` 
+            : contactNumber;
 
-    .order-header {
-        padding: 8px;
-    }
+        const orderBox = document.createElement('div');
+        orderBox.className = 'order-box';
+        orderBox.innerHTML = `
+            <div class="order-header" onclick="toggleOrderDetails(${order.id})">
+                <h3>Vendor: ${order.vendors.name} || Number: ${contactLink}</h3>
+                <span class="status ${order.status}">${order.status}</span>
+                <span class="toggle-icon" id="toggle-icon-${order.id}">${expandedStates[order.id] ? '-' : '+'}</span>
+            </div>
+            <div class="order-details" id="order-details-${order.id}" style="display: ${expandedStates[order.id] ? 'block' : 'none'}">
+                <br><br>
+                <p><strong>Items:</strong> ${productsList}</p>
+                <p><strong>Agent Name:</strong> ${order.sales_agents?.name || 'N/A'}</p>
+                <p><strong>Total:</strong> ₱${order.total_amount.toFixed(2)}</p>
+                <select id="payment-method-${order.id}" onchange="updateDeliveredButton(${order.id})" ${order.status !== 'pending' ? 'disabled' : ''}>
+                    <option value="">Select Payment Method</option>
+                    <option value="Cash" ${order.payment_method === 'Cash' ? 'selected' : ''}>Cash</option>
+                    <option value="Online" ${order.payment_method === 'Online' ? 'selected' : ''}>Online</option>
+                    <option value="Collectibles" ${order.payment_method === 'Collectibles' ? 'selected' : ''}>Collectibles</option>
+                    <option value="Partial" ${order.payment_method === 'Partial' ? 'selected' : ''}>Partial Payment</option>
+                </select>
+                <div class="actions" ${order.status !== 'pending' ? 'style="display: none;"' : ''}>
+                    <button class="delivered-btn" id="delivered-btn-${order.id}" onclick="updateOrderStatus(${order.id}, 'delivered')" disabled>Delivered</button>
+                    <button class="cancel-btn" onclick="updateOrderStatus(${order.id}, 'cancelled')">Cancel</button>
+                </div>
+                <p><strong>Last Updated:</strong> ${lastUpdatedStr}</p>
+            </div>
+        `;
+        orderList.appendChild(orderBox);
 
-    .order-header h3 {
-        font-size: 14px;
-    }
+        updateDeliveredButton(order.id);
+    });
+}
 
-    .order-header .status {
-        font-size: 10px;
-        padding: 3px 6px;
-    }
-
-    .order-header .toggle-icon {
-        font-size: 14px;
-    }
-
-    .order-details {
-        padding: 8px;
-    }
-
-    .order-details p {
-        font-size: 12px;
-    }
-
-    .order-details select, .order-details button {
-        font-size: 12px;
-        padding: 6px 12px;
-        min-height: 40px; /* Slightly smaller but still touch-friendly */
-    }
-
-    .modal-content {
-        padding: 10px;
-        max-height: 90vh; /* More vertical space */
-    }
-
-    .modal-content h2 {
-        font-size: 18px;
-    }
-
-    .modal-content label, .modal-content input, .modal-content select, .modal-content button {
-        font-size: 14px;
-    }
-
-    .menu-container, .logout-btn {
-        top: 5px;
-        left: 5px;
-        right: 5px;
-    }
-
-    .menu-btn, .logout-btn {
-        font-size: 14px;
-        padding: 6px 12px;
-        min-height: 40px;
-    }
-
-    .menu-content {
-        min-width: 150px;
-        max-height: 150px;
-    }
-
-    .menu-content button {
-        font-size: 12px;
-        padding: 6px 10px;
-        min-height: 40px;
-    }
-
-    .toast-container {
-        top: 50px; /* Avoid overlapping with menu/logout */
-        right: 5px;
-        width: 90%;
-    }
-
-    .toast {
-        font-size: 12px;
-        padding: 8px 12px;
+// Toggle order details visibility
+function toggleOrderDetails(orderId) {
+    const details = document.getElementById(`order-details-${orderId}`);
+    const toggleIcon = document.getElementById(`toggle-icon-${orderId}`);
+    if (details.style.display === 'block') {
+        details.style.display = 'none';
+        toggleIcon.textContent = '+';
+        expandedStates[orderId] = false;
+    } else {
+        details.style.display = 'block';
+        toggleIcon.textContent = '-';
+        expandedStates[orderId] = true;
     }
 }
 
-.contact-link {
-    color: #007bff; /* Blue to indicate clickability */
-    text-decoration: underline;
-    cursor: pointer;
+// Update delivered button state and show partial payment modal if needed
+async function updateDeliveredButton(orderId) {
+    const paymentMethod = document.getElementById(`payment-method-${orderId}`).value;
+    const deliveredBtn = document.getElementById(`delivered-btn-${orderId}`);
+    const orderStatus = deliveredBtn.closest('.order-box').querySelector('.status').textContent;
+
+    deliveredBtn.disabled = !paymentMethod;
+
+    // Only show partial payment modal for "pending" orders
+    if (paymentMethod === 'Partial' && orderStatus === 'pending') {
+        const partialModal = document.getElementById('partial-payment-modal');
+        if (!partialModal) {
+            console.error('Partial payment modal not found in DOM');
+            showMessageModal('Error', 'Partial payment modal not found.');
+            return;
+        }
+
+        const { data: orderData, error: fetchError } = await supabase
+            .from('orders')
+            .select('total_amount')
+            .eq('id', orderId)
+            .single();
+
+        if (fetchError) {
+            showMessageModal('Error', 'Error fetching order: ' + fetchError.message);
+            return;
+        }
+
+        const partialOrderIdInput = document.getElementById('partial-order-id');
+        const partialAmountPaidInput = document.getElementById('partial-amount-paid');
+        if (!partialOrderIdInput || !partialAmountPaidInput) {
+            console.error('Partial payment form inputs not found in DOM');
+            showMessageModal('Error', 'Partial payment form inputs not found.');
+            return;
+        }
+
+        partialOrderIdInput.value = orderId;
+        partialAmountPaidInput.dataset.totalAmount = orderData.total_amount;
+        partialModal.style.display = 'flex';
+        console.log('Partial payment modal should be visible now');
+    }
 }
 
-.contact-link:hover {
-    color: #0056b3; /* Darker blue on hover */
+// Update order status
+async function updateOrderStatus(orderId, newStatus) {
+    const paymentMethod = document.getElementById(`payment-method-${orderId}`).value;
+    if (!paymentMethod && newStatus === 'delivered') {
+        showMessageModal('Error', 'Please select a payment method before marking as delivered.');
+        return;
+    }
+
+    document.getElementById('loading-modal').style.display = 'flex';
+
+    const { data: oldData, error: fetchError } = await supabase
+        .from('orders')
+        .select('*')
+        .eq('id', orderId)
+        .single();
+
+    if (fetchError) {
+        document.getElementById('loading-modal').style.display = 'none';
+        showMessageModal('Error', 'Error fetching order: ' + fetchError.message);
+        return;
+    }
+
+    let amountPaid = 0;
+    let amountDue = 0;
+    let finalPaymentMethod = paymentMethod;
+
+    if (newStatus === 'delivered' || newStatus === 'cancelled') {
+        if (paymentMethod === 'Cash' || paymentMethod === 'Online') {
+            amountPaid = oldData.total_amount;
+            amountDue = 0;
+        } else if (paymentMethod === 'Collectibles') {
+            amountPaid = 0;
+            amountDue = oldData.total_amount;
+        } else if (paymentMethod === 'Partial') {
+            amountPaid = oldData.amount_paid || 0;
+            amountDue = oldData.amount_due || oldData.total_amount;
+            if (amountPaid === 0 && amountDue === 0) {
+                document.getElementById('loading-modal').style.display = 'none';
+                showMessageModal('Error', 'Please complete the partial payment before marking as delivered.');
+                return;
+            }
+        }
+    }
+
+    const { error } = await supabase
+        .from('orders')
+        .update({
+            status: newStatus,
+            payment_method: (newStatus === 'delivered' || newStatus === 'cancelled') ? finalPaymentMethod : null,
+            amount_paid: amountPaid,
+            amount_due: amountDue,
+            payment_updated_at: (newStatus === 'delivered' || newStatus === 'cancelled') ? new Date().toISOString() : null
+        })
+        .eq('id', orderId);
+
+    if (error) {
+        document.getElementById('loading-modal').style.display = 'none';
+        showMessageModal('Error', 'Error updating order: ' + error.message);
+        return;
+    }
+
+    await supabase
+        .from('history')
+        .insert({
+            entity_type: 'order',
+            entity_id: orderId,
+            change_type: 'update',
+            details: { old: oldData, new: { status: newStatus, payment_method: finalPaymentMethod, amount_paid: amountPaid, amount_due: amountDue } }
+        });
+
+    document.getElementById('loading-modal').style.display = 'none';
+    showToast('Order updated successfully!');
+    const currentFilter = document.getElementById('status-filter').value;
+    const sortOrder = document.getElementById('sort-order')?.value || 'desc'; // Include sort order
+    fetchOrders(currentFilter, sortOrder); // Refresh with sort
 }
+
+// Close partial payment modal
+function closePartialPaymentModal() {
+    document.getElementById('partial-payment-modal').style.display = 'none';
+}
+
+// Event listener for status filter
+document.getElementById('status-filter').addEventListener('change', (e) => {
+    const sortOrder = document.getElementById('sort-order')?.value || 'desc'; // Default to desc
+    fetchOrders(e.target.value, sortOrder);
+});
+
+// Event listener for sort order
+document.getElementById('sort-order')?.addEventListener('change', (e) => {
+    const statusFilter = document.getElementById('status-filter').value;
+    fetchOrders(statusFilter, e.target.value);
+});
+
+// Initialize
+checkAuth('admin').then(isAuthenticated => {
+    if (isAuthenticated) {
+        const initialSortOrder = document.getElementById('sort-order')?.value || 'desc';
+        fetchOrders('pending', initialSortOrder); // Initial fetch with sort
+
+        const channel = supabase
+            .channel('orders-channel')
+            .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'orders' }, (payload) => {
+                const currentFilter = document.getElementById('status-filter').value;
+                const sortOrder = document.getElementById('sort-order')?.value || 'desc';
+                fetchOrders(currentFilter, sortOrder);
+            })
+            .subscribe();
+
+        // Add event listener for partial payment form submission
+        const partialPaymentForm = document.getElementById('partial-payment-form');
+        if (partialPaymentForm) {
+            console.log('Partial payment form found, adding event listener');
+            partialPaymentForm.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                console.log('Partial payment form submitted');
+                const orderId = document.getElementById('partial-order-id').value;
+                const amountPaid = parseFloat(document.getElementById('partial-amount-paid').value) || 0;
+                const totalAmount = parseFloat(document.getElementById('partial-amount-paid').dataset.totalAmount) || 0;
+                const paymentMethod = document.getElementById('partial-payment-method').value;
+
+                if (amountPaid >= totalAmount) {
+                    showMessageModal('Error', 'Amount paid cannot be greater than or equal to total amount for partial payment');
+                    return;
+                }
+
+                document.getElementById('loading-modal').style.display = 'flex';
+
+                const { data: oldData, error: fetchError } = await supabase
+                    .from('orders')
+                    .select('*')
+                    .eq('id', orderId)
+                    .single();
+
+                if (fetchError) {
+                    document.getElementById('loading-modal').style.display = 'none';
+                    showMessageModal('Error', 'Error fetching order: ' + fetchError.message);
+                    return;
+                }
+
+                const amountDue = totalAmount - amountPaid;
+
+                const { error } = await supabase
+                    .from('orders')
+                    .update({
+                        payment_method: 'Partial',
+                        amount_paid: amountPaid,
+                        amount_due: amountDue,
+                        payment_updated_at: new Date().toISOString()
+                    })
+                    .eq('id', orderId);
+
+                if (error) {
+                    document.getElementById('loading-modal').style.display = 'none';
+                    showMessageModal('Error', 'Error updating order: ' + error.message);
+                    return;
+                }
+
+                await supabase
+                    .from('history')
+                    .insert({
+                        entity_type: 'order',
+                        entity_id: orderId,
+                        change_type: 'update',
+                        details: { old: oldData, new: { payment_method: 'Partial', amount_paid: amountPaid, amount_due: amountDue } }
+                    });
+
+                document.getElementById('loading-modal').style.display = 'none';
+                showToast('Partial payment recorded successfully!', () => {
+                    closePartialPaymentModal();
+                });
+            });
+        } else {
+            console.error('Partial payment form not found in DOM during initialization');
+        }
+    }
+});
