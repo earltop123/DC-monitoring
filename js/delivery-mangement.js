@@ -1,79 +1,3 @@
-const supabaseUrl = 'https://vefirimqfcqcirgrhrpy.supabase.co';
-const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZlZmlyaW1xZmNxY2lyZ3JocnB5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDI2NDg8MDIsImV4cCI6MjA1ODIyNDgwMn0.hLFVAUrrD1PtsfBbFuivh3b83z6YtMyKJrx8Idz2T_E';
-const supabase = window.supabase.createClient(supabaseUrl, supabaseKey);
-
-// Check if user is logged in and has admin role
-async function checkAuth() {
-    const { data: { session }, error } = await supabase.auth.getSession();
-    if (error || !session) {
-        showMessageModal('Error', 'Please log in to access this page.');
-        setTimeout(() => {
-            window.location.href = 'login.html';
-        }, 2000);
-        return false;
-    }
-
-    // Fetch user role from profiles table
-    const { data: profile, error: profileError } = await supabase
-        .from('profiles')
-        .select('role')
-        .eq('id', session.user.id)
-        .single();
-
-    if (profileError || !profile || profile.role !== 'admin') {
-        showMessageModal('Error', 'Access denied. Admins only.');
-        setTimeout(() => {
-            window.location.href = 'login.html';
-        }, 2000);
-        return false;
-    }
-
-    return true;
-}
-
-// Logout function
-async function logout() {
-    const { error } = await supabase.auth.signOut();
-    if (error) {
-        showMessageModal('Error', 'Error logging out: ' + error.message);
-        return;
-    }
-    showToast('Logged out successfully!', () => {
-        window.location.href = 'login.html';
-    });
-}
-
-// Placeholder navigation function
-function navigateTo(page) {
-    console.log(`Navigating to ${page} page`);
-}
-
-// Function to show message modal (for errors)
-function showMessageModal(title, message) {
-    document.getElementById('message-title').textContent = title;
-    document.getElementById('message-text').textContent = message;
-    document.getElementById('message-modal').style.display = 'flex';
-}
-
-// Function to close message modal
-function closeMessageModal() {
-    document.getElementById('message-modal').style.display = 'none';
-}
-
-// Function to show toast notification (for success)
-function showToast(message, callback) {
-    const toastContainer = document.getElementById('toast-container');
-    const toast = document.createElement('div');
-    toast.className = 'toast';
-    toast.textContent = message;
-    toastContainer.appendChild(toast);
-
-    setTimeout(() => {
-        toast.remove();
-        if (callback) callback();
-    }, 2000);
-}
-
 // Maintain a map of expanded states
 let expandedStates = {};
 
@@ -81,7 +5,7 @@ let expandedStates = {};
 async function fetchOrders(statusFilter = 'pending') {
     const { data: orders, error } = await supabase
         .from('orders')
-        .select('*, vendors(name)')
+        .select('*, vendors(name), sales_agents(name)')
         .eq('status', statusFilter)
         .order('order_date', { ascending: false });
 
@@ -112,6 +36,7 @@ function renderOrders(orders) {
             </div>
             <div class="order-details" id="order-details-${order.id}" style="display: ${expandedStates[order.id] ? 'block' : 'none'}">
                 <p><strong>Items:</strong> ${productsList}</p>
+                <p><strong>Agent Name:</strong> ${order.sales_agents?.name || 'N/A'}</p>
                 <p><strong>Total:</strong> ₱${order.total_amount.toFixed(2)}</p>
                 <select id="payment-method-${order.id}" onchange="updateDeliveredButton(${order.id})" ${order.status !== 'pending' ? 'disabled' : ''}>
                     <option value="">Select Payment Method</option>
@@ -129,7 +54,6 @@ function renderOrders(orders) {
         `;
         orderList.appendChild(orderBox);
 
-        // Set initial state of delivered button
         updateDeliveredButton(order.id);
     });
 }
@@ -149,11 +73,46 @@ function toggleOrderDetails(orderId) {
     }
 }
 
-// Update delivered button state
-function updateDeliveredButton(orderId) {
+// Update delivered button state and show partial payment modal if needed
+async function updateDeliveredButton(orderId) {
     const paymentMethod = document.getElementById(`payment-method-${orderId}`).value;
     const deliveredBtn = document.getElementById(`delivered-btn-${orderId}`);
     deliveredBtn.disabled = !paymentMethod;
+
+    // If "Partial Payment" is selected, show the modal immediately
+    if (paymentMethod === 'Partial') {
+        const partialModal = document.getElementById('partial-payment-modal');
+        if (!partialModal) {
+            console.error('Partial payment modal not found in DOM');
+            showMessageModal('Error', 'Partial payment modal not found.');
+            return;
+        }
+
+        // Fetch the order to get the total_amount
+        const { data: orderData, error: fetchError } = await supabase
+            .from('orders')
+            .select('total_amount')
+            .eq('id', orderId)
+            .single();
+
+        if (fetchError) {
+            showMessageModal('Error', 'Error fetching order: ' + fetchError.message);
+            return;
+        }
+
+        const partialOrderIdInput = document.getElementById('partial-order-id');
+        const partialAmountPaidInput = document.getElementById('partial-amount-paid');
+        if (!partialOrderIdInput || !partialAmountPaidInput) {
+            console.error('Partial payment form inputs not found in DOM');
+            showMessageModal('Error', 'Partial payment form inputs not found.');
+            return;
+        }
+
+        partialOrderIdInput.value = orderId;
+        partialAmountPaidInput.dataset.totalAmount = orderData.total_amount;
+        partialModal.style.display = 'flex';
+        console.log('Partial payment modal should be visible now');
+    }
 }
 
 // Update order status
@@ -166,7 +125,6 @@ async function updateOrderStatus(orderId, newStatus) {
 
     document.getElementById('loading-modal').style.display = 'flex';
 
-    // Fetch current order data
     const { data: oldData, error: fetchError } = await supabase
         .from('orders')
         .select('*')
@@ -191,16 +149,17 @@ async function updateOrderStatus(orderId, newStatus) {
             amountPaid = 0;
             amountDue = oldData.total_amount;
         } else if (paymentMethod === 'Partial') {
-            // Show partial payment modal
-            document.getElementById('partial-order-id').value = orderId;
-            document.getElementById('partial-amount-paid').dataset.totalAmount = oldData.total_amount;
-            document.getElementById('partial-payment-modal').style.display = 'flex';
-            document.getElementById('loading-modal').style.display = 'none';
-            return;
+            // For partial payment, the amount_paid and amount_due should already be updated by the modal submission
+            amountPaid = oldData.amount_paid || 0;
+            amountDue = oldData.amount_due || oldData.total_amount;
+            if (amountPaid === 0 && amountDue === 0) {
+                document.getElementById('loading-modal').style.display = 'none';
+                showMessageModal('Error', 'Please complete the partial payment before marking as delivered.');
+                return;
+            }
         }
     }
 
-    // Update order
     const { error } = await supabase
         .from('orders')
         .update({
@@ -218,7 +177,6 @@ async function updateOrderStatus(orderId, newStatus) {
         return;
     }
 
-    // Log to history
     await supabase
         .from('history')
         .insert({
@@ -232,70 +190,6 @@ async function updateOrderStatus(orderId, newStatus) {
     showToast('Order updated successfully!');
 }
 
-// Handle partial payment form submission
-document.getElementById('partial-payment-form').addEventListener('submit', async (e) => {
-    e.preventDefault();
-    const orderId = document.getElementById('partial-order-id').value;
-    const amountPaid = parseFloat(document.getElementById('partial-amount-paid').value) || 0;
-    const totalAmount = parseFloat(document.getElementById('partial-amount-paid').dataset.totalAmount) || 0;
-    const paymentMethod = document.getElementById('partial-payment-method').value;
-
-    if (amountPaid >= totalAmount) {
-        showMessageModal('Error', 'Amount paid cannot be greater than or equal to total amount for partial payment');
-        return;
-    }
-
-    document.getElementById('loading-modal').style.display = 'flex';
-
-    // Fetch current order data
-    const { data: oldData, error: fetchError } = await supabase
-        .from('orders')
-        .select('*')
-        .eq('id', orderId)
-        .single();
-
-    if (fetchError) {
-        document.getElementById('loading-modal').style.display = 'none';
-        showMessageModal('Error', 'Error fetching order: ' + fetchError.message);
-        return;
-    }
-
-    const amountDue = totalAmount - amountPaid;
-
-    // Update order
-    const { error } = await supabase
-        .from('orders')
-        .update({
-            status: 'delivered',
-            payment_method: 'Partial',
-            amount_paid: amountPaid,
-            amount_due: amountDue,
-            payment_updated_at: new Date().toISOString()
-        })
-        .eq('id', orderId);
-
-    if (error) {
-        document.getElementById('loading-modal').style.display = 'none';
-        showMessageModal('Error', 'Error updating order: ' + error.message);
-        return;
-    }
-
-    // Log to history
-    await supabase
-        .from('history')
-        .insert({
-            entity_type: 'order',
-            entity_id: orderId,
-            change_type: 'update',
-            details: { old: oldData, new: { status: 'delivered', payment_method: 'Partial', amount_paid: amountPaid, amount_due: amountDue } }
-        });
-
-    document.getElementById('loading-modal').style.display = 'none';
-    showToast('Order updated successfully!', () => {
-        closePartialPaymentModal();
-    });
-});
-
 // Close partial payment modal
 function closePartialPaymentModal() {
     document.getElementById('partial-payment-modal').style.display = 'none';
@@ -306,19 +200,84 @@ document.getElementById('status-filter').addEventListener('change', (e) => {
     fetchOrders(e.target.value);
 });
 
-// Real-time subscription for orders table
-const channel = supabase
-    .channel('orders-channel')
-    .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'orders' }, (payload) => {
-        console.log('Order updated:', payload);
-        // Re-fetch orders with the current filter to update the UI
-        fetchOrders(document.getElementById('status-filter').value);
-    })
-    .subscribe();
-
 // Initialize
-checkAuth().then(isAuthenticated => {
+checkAuth('admin').then(isAuthenticated => {
     if (isAuthenticated) {
         fetchOrders();
+
+        const channel = supabase
+            .channel('orders-channel')
+            .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'orders' }, (payload) => {
+                console.log('Order updated:', payload);
+                fetchOrders(document.getElementById('status-filter').value);
+            })
+            .subscribe();
+
+        // Add event listener for partial payment form submission
+        const partialPaymentForm = document.getElementById('partial-payment-form');
+        if (partialPaymentForm) {
+            console.log('Partial payment form found, adding event listener');
+            partialPaymentForm.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                console.log('Partial payment form submitted');
+                const orderId = document.getElementById('partial-order-id').value;
+                const amountPaid = parseFloat(document.getElementById('partial-amount-paid').value) || 0;
+                const totalAmount = parseFloat(document.getElementById('partial-amount-paid').dataset.totalAmount) || 0;
+                const paymentMethod = document.getElementById('partial-payment-method').value;
+
+                if (amountPaid >= totalAmount) {
+                    showMessageModal('Error', 'Amount paid cannot be greater than or equal to total amount for partial payment');
+                    return;
+                }
+
+                document.getElementById('loading-modal').style.display = 'flex';
+
+                const { data: oldData, error: fetchError } = await supabase
+                    .from('orders')
+                    .select('*')
+                    .eq('id', orderId)
+                    .single();
+
+                if (fetchError) {
+                    document.getElementById('loading-modal').style.display = 'none';
+                    showMessageModal('Error', 'Error fetching order: ' + fetchError.message);
+                    return;
+                }
+
+                const amountDue = totalAmount - amountPaid;
+
+                const { error } = await supabase
+                    .from('orders')
+                    .update({
+                        payment_method: 'Partial',
+                        amount_paid: amountPaid,
+                        amount_due: amountDue,
+                        payment_updated_at: new Date().toISOString()
+                    })
+                    .eq('id', orderId);
+
+                if (error) {
+                    document.getElementById('loading-modal').style.display = 'none';
+                    showMessageModal('Error', 'Error updating order: ' + error.message);
+                    return;
+                }
+
+                await supabase
+                    .from('history')
+                    .insert({
+                        entity_type: 'order',
+                        entity_id: orderId,
+                        change_type: 'update',
+                        details: { old: oldData, new: { payment_method: 'Partial', amount_paid: amountPaid, amount_due: amountDue } }
+                    });
+
+                document.getElementById('loading-modal').style.display = 'none';
+                showToast('Partial payment recorded successfully!', () => {
+                    closePartialPaymentModal();
+                });
+            });
+        } else {
+            console.error('Partial payment form not found in DOM during initialization');
+        }
     }
 });
