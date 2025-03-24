@@ -1,67 +1,69 @@
 body {
     font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
     margin: 0;
-    padding: 20px;
+    padding: 10px; /* Reduced padding for small screens */
     background-color: #f5f7fa;
-    font-size: 18px;
+    font-size: 16px; /* Slightly smaller base font size */
     color: #333;
 }
 
 .container {
-    width: calc(100% - 40px);
+    width: 100%; /* Full width on small screens */
     max-width: none;
-    min-width: 800px;
+    min-width: 280px; /* Slightly smaller min-width */
     margin: 0 auto;
     background: #ffffff;
-    padding: 30px;
-    border-radius: 12px;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    padding: 15px; /* Reduced padding */
+    border-radius: 8px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
 }
 
 h1 {
     text-align: center;
     color: #2c3e50;
-    font-size: 36px;
-    margin-bottom: 30px;
+    font-size: 24px; /* Smaller heading */
+    margin-bottom: 15px;
     font-weight: 600;
 }
 
 .filters {
-    margin: 20px 0;
+    margin: 15px 0;
     display: flex;
     justify-content: center;
-    gap: 10px;
+    gap: 8px;
     flex-wrap: wrap;
 }
 
 .filters label {
-    font-size: 18px;
+    font-size: 16px; /* Smaller label */
     font-weight: 500;
     color: #4b5563;
 }
 
 .filters select {
-    padding: 10px;
+    padding: 8px;
     border: 1px solid #d1d5db;
     border-radius: 6px;
-    font-size: 18px;
+    font-size: 16px;
     background-color: #fff;
     cursor: pointer;
+    width: 100%; /* Full width on small screens */
+    max-width: 200px;
 }
 
 .order-box {
-    margin-bottom: 15px;
+    margin-bottom: 10px;
     border: 1px solid #d1d5db;
-    border-radius: 8px;
+    border-radius: 6px;
     background-color: #fff;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.05);
 }
 
 .order-header {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    padding: 15px;
+    padding: 10px;
     background-color: #f9fafb;
     border-bottom: 1px solid #d1d5db;
     cursor: pointer;
@@ -69,15 +71,15 @@ h1 {
 
 .order-header h3 {
     margin: 0;
-    font-size: 18px;
+    font-size: 16px; /* Smaller vendor name */
     color: #2c3e50;
     font-weight: 500;
 }
 
 .order-header .status {
-    padding: 5px 10px;
-    border-radius: 12px;
-    font-size: 14px;
+    padding: 4px 8px;
+    border-radius: 10px;
+    font-size: 12px;
     font-weight: 500;
     text-transform: uppercase;
 }
@@ -98,18 +100,20 @@ h1 {
 }
 
 .order-header .toggle-icon {
-    font-size: 18px;
+    font-size: 16px;
     color: #4b5563;
+    min-width: 20px; /* Ensure tappable area */
+    text-align: center;
 }
 
 .order-details {
-    padding: 15px;
+    padding: 10px;
     display: none;
 }
 
 .order-details p {
-    margin: 5px 0;
-    font-size: 16px;
+    margin: 4px 0;
+    font-size: 14px; /* Smaller text */
     color: #4b5563;
 }
 
@@ -118,28 +122,30 @@ h1 {
 }
 
 .order-details select {
-    padding: 10px;
+    padding: 8px;
     border: 1px solid #d1d5db;
     border-radius: 6px;
-    font-size: 16px;
+    font-size: 14px;
     width: 100%;
-    margin-top: 10px;
+    margin-top: 8px;
     cursor: pointer;
 }
 
 .order-details .actions {
     display: flex;
-    gap: 10px;
-    margin-top: 15px;
+    gap: 8px;
+    margin-top: 10px;
+    flex-wrap: wrap; /* Allow buttons to wrap */
 }
 
 .order-details button {
-    padding: 10px 20px;
+    padding: 8px 16px;
     border: none;
     border-radius: 6px;
     cursor: pointer;
-    font-size: 16px;
-    width: 100%;
+    font-size: 14px;
+    flex: 1; /* Buttons take equal space */
+    min-height: 44px; /* Touch-friendly height */
 }
 
 .order-details .delivered-btn {
@@ -172,25 +178,26 @@ h1 {
     width: 100%;
     height: 100%;
     background-color: rgba(0, 0, 0, 0.5);
-    display: flex;
+    /*display: flex !important; /* Temporary for debugging */
     justify-content: center;
     align-items: center;
+    z-index: 1000;
 }
 
 .modal-content {
     background-color: #ffffff;
-    padding: 30px;
-    border-radius: 12px;
-    max-width: 600px;
-    width: 90%;
+    padding: 15px;
+    border-radius: 8px;
+    max-width: 90%; /* Fit within small screens */
+    width: 100%;
     max-height: 80vh;
     overflow-y: auto;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
 }
 
 .modal-content h2 {
     margin-top: 0;
-    font-size: 28px;
+    font-size: 20px; /* Smaller modal heading */
     color: #2c3e50;
     font-weight: 500;
 }
@@ -198,31 +205,32 @@ h1 {
 .modal-content form {
     display: flex;
     flex-direction: column;
-    gap: 15px;
+    gap: 10px;
 }
 
 .modal-content label {
     font-weight: 500;
-    font-size: 18px;
+    font-size: 16px;
     color: #4b5563;
 }
 
 .modal-content input, .modal-content select {
-    padding: 12px;
+    padding: 8px;
     border: 1px solid #d1d5db;
     border-radius: 6px;
-    font-size: 18px;
+    font-size: 14px;
 }
 
 .modal-content button {
-    padding: 12px 24px;
+    padding: 10px 20px;
     background-color: #dc3545;
     color: white;
     border: none;
     border-radius: 6px;
     cursor: pointer;
-    font-size: 18px;
-    margin: 10px;
+    font-size: 14px;
+    margin: 5px 0;
+    min-height: 44px; /* Touch-friendly */
 }
 
 .modal-content button:hover {
@@ -239,29 +247,29 @@ h1 {
 
 .footer {
     text-align: center;
-    margin-top: 40px;
-    padding: 20px 0;
-    font-size: 16px;
+    margin-top: 20px;
+    padding: 10px 0;
+    font-size: 14px;
     color: #6b7280;
     border-top: 1px solid #e2e8f0;
 }
 
 .menu-container {
-    position: absolute;
-    top: 30px;
-    left: 30px;
+    position: fixed; /* Fixed to stay visible */
+    top: 10px;
+    left: 10px;
     z-index: 1000;
 }
 
 .menu-btn {
-    padding: 12px 24px;
+    padding: 8px 16px;
     background-color: #dc3545;
     color: white;
     border: none;
     border-radius: 6px;
     cursor: pointer;
-    font-size: 18px;
-    transition: background-color 0.3s;
+    font-size: 16px;
+    min-height: 44px; /* Touch-friendly */
 }
 
 .menu-btn:hover {
@@ -274,10 +282,12 @@ h1 {
     top: 100%;
     left: 0;
     background-color: #ffffff;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-    border-radius: 8px;
-    padding: 10px 0;
-    min-width: 200px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+    border-radius: 6px;
+    padding: 5px 0;
+    min-width: 180px;
+    max-height: 200px; /* Prevent overflow */
+    overflow-y: auto; /* Scrollable menu */
 }
 
 .menu-container:hover .menu-content {
@@ -287,14 +297,14 @@ h1 {
 .menu-content button {
     display: block;
     width: 100%;
-    padding: 12px 20px;
+    padding: 8px 15px;
     background: none;
     border: none;
     text-align: left;
-    font-size: 18px;
+    font-size: 14px;
     color: #2c3e50;
     cursor: pointer;
-    transition: background-color 0.3s;
+    min-height: 44px; /* Touch-friendly */
 }
 
 .menu-content button:hover {
@@ -302,17 +312,17 @@ h1 {
 }
 
 .logout-btn {
-    position: absolute;
-    top: 30px;
-    right: 30px;
-    padding: 12px 24px;
+    position: fixed; /* Fixed to stay visible */
+    top: 10px;
+    right: 10px;
+    padding: 8px 16px;
     background-color: #dc3545;
     color: white;
     border: none;
     border-radius: 6px;
     cursor: pointer;
-    font-size: 18px;
-    transition: background-color 0.3s;
+    font-size: 16px;
+    min-height: 44px; /* Touch-friendly */
     z-index: 1000;
 }
 
@@ -322,19 +332,21 @@ h1 {
 
 .toast-container {
     position: fixed;
-    top: 20px;
-    right: 20px;
+    top: 10px;
+    right: 10px;
     z-index: 1000;
+    width: 90%; /* Fit within small screens */
+    max-width: 280px;
 }
 
 .toast {
     background-color: #10b981;
     color: white;
-    padding: 15px 20px;
+    padding: 10px 15px;
     border-radius: 6px;
-    margin-bottom: 10px;
-    font-size: 16px;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+    margin-bottom: 8px;
+    font-size: 14px;
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.2);
     animation: slideIn 0.5s ease-in-out, fadeOut 0.5s ease-in-out 1.5s forwards;
 }
 
@@ -348,45 +360,106 @@ h1 {
     to { opacity: 0; }
 }
 
+/* Media Query for iPhone 5S and similar small screens */
 @media (max-width: 320px) {
+    body {
+        padding: 5px;
+    }
+
     .container {
-        padding: 15px;
-        min-width: 280px;
+        padding: 10px;
+        min-width: 0; /* Remove min-width constraint */
     }
+
     h1 {
-        font-size: 24px;
+        font-size: 20px;
+        margin-bottom: 10px;
     }
+
     .filters label, .filters select {
         font-size: 14px;
     }
+
     .filters select {
+        padding: 6px;
+        max-width: 100%; /* Full width */
+    }
+
+    .order-header {
         padding: 8px;
     }
+
     .order-header h3 {
-        font-size: 16px;
+        font-size: 14px;
     }
+
     .order-header .status {
-        font-size: 12px;
-        padding: 4px 8px;
+        font-size: 10px;
+        padding: 3px 6px;
     }
+
+    .order-header .toggle-icon {
+        font-size: 14px;
+    }
+
+    .order-details {
+        padding: 8px;
+    }
+
     .order-details p {
-        font-size: 14px;
+        font-size: 12px;
     }
+
     .order-details select, .order-details button {
+        font-size: 12px;
+        padding: 6px 12px;
+        min-height: 40px; /* Slightly smaller but still touch-friendly */
+    }
+
+    .modal-content {
+        padding: 10px;
+        max-height: 90vh; /* More vertical space */
+    }
+
+    .modal-content h2 {
+        font-size: 18px;
+    }
+
+    .modal-content label, .modal-content input, .modal-content select, .modal-content button {
         font-size: 14px;
-        padding: 8px 16px;
     }
+
     .menu-container, .logout-btn {
-        top: 15px;
-        left: 15px;
-        right: 15px;
+        top: 5px;
+        left: 5px;
+        right: 5px;
     }
+
+    .menu-btn, .logout-btn {
+        font-size: 14px;
+        padding: 6px 12px;
+        min-height: 40px;
+    }
+
+    .menu-content {
+        min-width: 150px;
+        max-height: 150px;
+    }
+
+    .menu-content button {
+        font-size: 12px;
+        padding: 6px 10px;
+        min-height: 40px;
+    }
+
     .toast-container {
-        top: 10px;
-        right: 10px;
+        top: 50px; /* Avoid overlapping with menu/logout */
+        right: 5px;
         width: 90%;
     }
+
     .toast {
-        font-size: 14px;
+        font-size: 12px;
+        padding: 8px 12px;
     }
 }
