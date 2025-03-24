@@ -110,6 +110,17 @@
         </div>
     </div>
 
+    <div id="delete-vendor-modal" class="modal" style="display: none;">
+        <div class="modal-content">
+            <h2>Confirm Delete</h2>
+            <p>Are you sure you want to delete this vendor?</p>
+            <div style="display: flex; gap: 10px; justify-content: flex-end;">
+                <button type="button" onclick="closeDeleteVendorModal()">Cancel</button>
+                <button type="button" id="confirm-delete-btn" style="background-color: #dc3545; color: white;">Delete</button>
+            </div>
+        </div>
+    </div>
+
     <div id="loading-modal" class="modal" style="display: none;">
         <div class="modal-content">
             <h2>Loading...</h2>
@@ -121,5 +132,5 @@
     <script defer src="js/common.js"></script>
     <script defer src="js/total-vendor-list.js"></script>
     
-</body>
+<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'9255e1b82e0fb085',t:'MTc0MjgxNjMwMC4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
 </html>
