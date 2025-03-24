@@ -227,67 +227,79 @@ td {
 
 .modal-content {
     background-color: #ffffff;
-    padding: 20px;
+    padding: 15px;
     border-radius: 8px;
     width: 90%;
-    max-width: 500px;
+    max-width: 400px; /* Reduced from 500px */
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+    max-height: 90vh; /* Limit height for small screens */
+    overflow-y: auto; /* Scroll if content overflows */
 }
 
 .modal-content h2 {
     margin-top: 0;
     color: #2c3e50;
+    font-size: 20px; /* Reduced for smaller screens */
 }
 
 .modal-content form {
     display: flex;
     flex-direction: column;
-    gap: 15px;
+    gap: 10px; /* Reduced from 15px */
 }
 
 .modal-content label {
     font-weight: 500;
     color: #2c3e50;
+    font-size: 14px; /* Reduced for smaller screens */
 }
 
 .modal-content input,
 .modal-content select,
 .modal-content textarea {
-    padding: 8px;
+    padding: 6px; /* Reduced from 8px */
     border: 1px solid #d1d5db;
     border-radius: 4px;
-    font-size: 16px;
+    font-size: 14px; /* Reduced from 16px */
+    width: 100%; /* Ensure full width */
+    box-sizing: border-box; /* Include padding in width */
 }
 
 .modal-content textarea {
     resize: vertical;
-    min-height: 100px;
+    min-height: 80px; /* Reduced from 100px */
 }
 
 .modal-content button {
-    padding: 10px;
+    padding: 8px; /* Reduced from 10px */
     border: none;
     border-radius: 4px;
     cursor: pointer;
-    font-size: 16px;
+    font-size: 14px; /* Reduced from 16px */
 }
 
-.modal-content button[type="submit"] {
-    background-color: #007bff;
-    color: white;
-}
-
-.modal-content button[type="submit"]:hover {
-    background-color: #0056b3;
-}
-
-.modal-content button[type="button"] {
-    background-color: #6c757d;
-    color: white;
-}
-
-.modal-content button[type="button"]:hover {
-    background-color: #5a6268;
+/* Media query for small screens like iPhone 5S */
+@media (max-width: 320px) {
+    .modal-content {
+        padding: 10px;
+        width: 95%;
+    }
+    .modal-content h2 {
+        font-size: 18px;
+    }
+    .modal-content label {
+        font-size: 12px;
+    }
+    .modal-content input,
+    .modal-content select,
+    .modal-content textarea {
+        padding: 5px;
+        font-size: 12px;
+    }
+    .modal-content button {
+        padding: 6px;
+        font-size: 12px;
+    }
 }
 
 .toast-container {
