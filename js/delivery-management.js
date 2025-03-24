@@ -2,12 +2,12 @@
 let expandedStates = {};
 
 // Fetch and display orders
-async function fetchOrders(statusFilter = 'pending') {
+async function fetchOrders(statusFilter = 'pending', sortOrder = 'desc') {
     const { data: orders, error } = await supabase
         .from('orders')
         .select('*, vendors(name), sales_agents(name)')
         .eq('status', statusFilter)
-        .order('order_date', { ascending: false });
+        .order('order_date', { ascending: sortOrder === 'asc' }); // Dynamic sort
 
     if (error) {
         showMessageModal('Error', 'Error fetching orders: ' + error.message);
@@ -150,7 +150,6 @@ async function updateOrderStatus(orderId, newStatus) {
             amountPaid = 0;
             amountDue = oldData.total_amount;
         } else if (paymentMethod === 'Partial') {
-            // For partial payment, the amount_paid and amount_due should already be updated by the modal submission
             amountPaid = oldData.amount_paid || 0;
             amountDue = oldData.amount_due || oldData.total_amount;
             if (amountPaid === 0 && amountDue === 0) {
@@ -189,6 +188,9 @@ async function updateOrderStatus(orderId, newStatus) {
 
     document.getElementById('loading-modal').style.display = 'none';
     showToast('Order updated successfully!');
+    const currentFilter = document.getElementById('status-filter').value;
+    const sortOrder = document.getElementById('sort-order')?.value || 'desc'; // Include sort order
+    fetchOrders(currentFilter, sortOrder); // Refresh with sort
 }
 
 // Close partial payment modal
@@ -198,19 +200,28 @@ function closePartialPaymentModal() {
 
 // Event listener for status filter
 document.getElementById('status-filter').addEventListener('change', (e) => {
-    fetchOrders(e.target.value);
+    const sortOrder = document.getElementById('sort-order')?.value || 'desc'; // Default to desc
+    fetchOrders(e.target.value, sortOrder);
+});
+
+// Event listener for sort order
+document.getElementById('sort-order')?.addEventListener('change', (e) => {
+    const statusFilter = document.getElementById('status-filter').value;
+    fetchOrders(statusFilter, e.target.value);
 });
 
 // Initialize
 checkAuth('admin').then(isAuthenticated => {
     if (isAuthenticated) {
-        fetchOrders();
+        const initialSortOrder = document.getElementById('sort-order')?.value || 'desc';
+        fetchOrders('pending', initialSortOrder); // Initial fetch with sort
 
         const channel = supabase
             .channel('orders-channel')
             .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'orders' }, (payload) => {
                 const currentFilter = document.getElementById('status-filter').value;
-                fetchOrders(currentFilter);
+                const sortOrder = document.getElementById('sort-order')?.value || 'desc';
+                fetchOrders(currentFilter, sortOrder);
             })
             .subscribe();
 
