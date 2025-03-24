@@ -77,10 +77,12 @@ function toggleOrderDetails(orderId) {
 async function updateDeliveredButton(orderId) {
     const paymentMethod = document.getElementById(`payment-method-${orderId}`).value;
     const deliveredBtn = document.getElementById(`delivered-btn-${orderId}`);
+    const orderStatus = deliveredBtn.closest('.order-box').querySelector('.status').textContent;
+
     deliveredBtn.disabled = !paymentMethod;
 
-    // If "Partial Payment" is selected, show the modal immediately
-    if (paymentMethod === 'Partial') {
+    // Only show partial payment modal for "pending" orders
+    if (paymentMethod === 'Partial' && orderStatus === 'pending') {
         const partialModal = document.getElementById('partial-payment-modal');
         if (!partialModal) {
             console.error('Partial payment modal not found in DOM');
@@ -88,7 +90,6 @@ async function updateDeliveredButton(orderId) {
             return;
         }
 
-        // Fetch the order to get the total_amount
         const { data: orderData, error: fetchError } = await supabase
             .from('orders')
             .select('total_amount')
@@ -208,8 +209,8 @@ checkAuth('admin').then(isAuthenticated => {
         const channel = supabase
             .channel('orders-channel')
             .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'orders' }, (payload) => {
-                console.log('Order updated:', payload);
-                fetchOrders(document.getElementById('status-filter').value);
+                const currentFilter = document.getElementById('status-filter').value;
+                fetchOrders(currentFilter);
             })
             .subscribe();
 
