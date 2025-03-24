@@ -212,7 +212,7 @@ function updateTotalAmount() {
     });
     document.getElementById('total-amount').textContent = `₱ ${total.toFixed(2)}`;
     updateAllProductSelects();
-    return total; // Return the total value
+    return total;
 }
 
 // Real-time event listeners
