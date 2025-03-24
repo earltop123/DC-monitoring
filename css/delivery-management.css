@@ -463,3 +463,13 @@ h1 {
         padding: 8px 12px;
     }
 }
+
+.contact-link {
+    color: #007bff; /* Blue to indicate clickability */
+    text-decoration: underline;
+    cursor: pointer;
+}
+
+.contact-link:hover {
+    color: #0056b3; /* Darker blue on hover */
+}
