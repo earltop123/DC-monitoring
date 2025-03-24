@@ -11,14 +11,21 @@ function showChiliSauceModal(bundledChiliSauceCount, extraChiliSauceCount) {
         <button onclick="confirmChiliSauce(false)">No</button>
     `);
     modal.querySelector('#chili-sauce-message').textContent = 
-        `You have included chili sauce with your products (${bundledChiliSauceCount} packs) and added extra chili sauce (${extraChiliSauceCount} packs). Do you want to proceed with the extra chili sauce?`;
+        `Our siomai comes with chili sauce, but you added ${extraChiliSauceCount} extra pack${extraChiliSauceCount === 1 ? '' : 's'}. Do you want to keep the extra sauce?`;
     modal.style.display = 'flex';
 }
 
 function confirmChiliSauce(confirm) {
     const modal = document.getElementById('chili-sauce-modal');
     if (modal) modal.style.display = 'none';
-    if (!confirm) removeExtraChiliSauce();
+    
+    if (!confirm && pendingOrderData) {
+        removeExtraChiliSauce(); // Remove from form
+        // Update pendingOrderData to exclude extra chili sauce
+        pendingOrderData.products = pendingOrderData.products.filter(p => p.id != chiliSauceId);
+        pendingOrderData.totalAmount = updateTotalAmount(); // Recalculate total
+    }
+    
     showReviewModal(pendingOrderData);
     pendingOrderData = null;
 }
@@ -34,9 +41,10 @@ function removeExtraChiliSauce() {
         return true;
     });
     if (!filteredRows.length) addProductRow();
+    resetStock(); // Reset stock after removal
+    updateTotalAmount(); // Ensure UI reflects new total
 }
 
-// Vendor suggestions
 // Vendor suggestions
 document.getElementById('vendor-name').addEventListener('input', async (e) => {
     const query = e.target.value;
@@ -45,6 +53,7 @@ document.getElementById('vendor-name').addEventListener('input', async (e) => {
         suggestions.innerHTML = '';
         document.getElementById('vendor-id').value = '';
         document.getElementById('agent-name').value = '';
+        document.getElementById('agent-id').value = ''; // Clear agent-id
         return;
     }
 
@@ -61,7 +70,6 @@ document.getElementById('vendor-name').addEventListener('input', async (e) => {
 
     // Fetch agents
     const agentIds = vendors.map(v => v.agent_id).filter(id => id);
-    console.log('Agent IDs:', agentIds); // Debug: Verify agent IDs
     let agents = [];
     if (agentIds.length > 0) {
         const { data: agentData, error: agentError } = await supabase
@@ -72,34 +80,32 @@ document.getElementById('vendor-name').addEventListener('input', async (e) => {
             console.error('Error fetching agents:', agentError.message);
         } else {
             agents = agentData || [];
-            console.log('Agents fetched:', agents); // Debug: Check agent data
         }
     }
 
     // Map vendor and agent data
     const vendorData = vendors.map(vendor => {
         const agent = agents.find(a => a.id === vendor.agent_id);
-        console.log(`Matching agent for vendor ${vendor.name}:`, { vendorAgentId: vendor.agent_id, agent }); // Debug: Verify match
         return {
             id: vendor.id,
             name: vendor.name,
-            agent_name: agent?.name || 'No Agent Assigned'
+            agent_name: agent?.name || 'No Agent Assigned',
+            agent_id: vendor.agent_id // Include agent_id
         };
     });
-    console.log('Vendor data mapped:', vendorData); // Debug: Final mapped data
 
-    // Render suggestions
     suggestions.innerHTML = vendorData.map(vendor => `
-        <div class="suggestion-item" onclick="selectVendor('${vendor.id}', '${vendor.name}', '${vendor.agent_name}')">${vendor.name}</div>
+        <div class="suggestion-item" onclick="selectVendor('${vendor.id}', '${vendor.name}', '${vendor.agent_name}', '${vendor.agent_id}')">${vendor.name}</div>
     `).join('');
 });
 
-function selectVendor(id, name, agentName) {
+function selectVendor(id, name, agentName, agentId) { // Add agentId parameter
     document.getElementById('vendor-name').value = name;
     document.getElementById('vendor-id').value = id;
     document.getElementById('agent-name').value = agentName;
+    document.getElementById('agent-id').value = agentId || ''; // Store agentId in a hidden input
     document.getElementById('vendor-suggestions').innerHTML = '';
-    console.log('Selected:', { id, name, agentName }); // Debug: Final selected values
+    console.log('Selected:', { id, name, agentName, agentId });
 }
 
 // Products
@@ -114,12 +120,27 @@ async function populateProducts() {
 }
 
 function updateAllProductSelects() {
-    document.querySelectorAll('.product-select').forEach(select => {
+    document.querySelectorAll('.product-row').forEach(row => {
+        const select = row.querySelector('.product-select');
         const currentValue = select.value;
+        const chiliSauceChecked = row.querySelector('.chili-sauce')?.checked || false;
+        const chiliSauceProduct = products.find(p => p.id == chiliSauceId);
+
         select.innerHTML = '<option value="">Select Product</option>' + 
-            products.map(p => `<option value="${p.id}">${p.name} (Php ${p.selling_price.toFixed(2)} Stock: ${p.currentStock})</option>`).join('');
+            products.map(p => {
+                const baseName = p.id == chiliSauceId ? 'Extra Chili Sauce (100 Grams)' : p.name;
+                let displayName = baseName;
+                let displayPrice = p.selling_price;
+                
+                if (p.id != chiliSauceId && chiliSauceChecked && chiliSauceId && chiliSauceProduct) {
+                    displayName = `${baseName} with Chili Sauce`;
+                    displayPrice += chiliSauceProduct.selling_price; // Add chili sauce price
+                }
+                
+                return `<option value="${p.id}">${displayName} (Php ${displayPrice.toFixed(2)} Stock: ${p.currentStock})</option>`;
+            }).join('');
+        
         select.value = currentValue || '';
-        const row = select.closest('.product-row');
         toggleChiliSauceVisibility(row, select.value == chiliSauceId);
     });
 }
@@ -209,6 +230,9 @@ document.addEventListener('change', (e) => {
     if (e.target.classList.contains('product-select')) {
         toggleChiliSauceVisibility(row, e.target.value == chiliSauceId);
         updateTotalAmount();
+    } else if (e.target.classList.contains('chili-sauce')) {
+        updateAllProductSelects(); // Update dropdown when checkbox changes
+        updateTotalAmount();
     }
 });
 
@@ -218,7 +242,16 @@ function showReviewModal(orderData) {
         <p><strong>Vendor:</strong> ${document.getElementById('vendor-name').value}</p>
         <p><strong>Agent:</strong> ${document.getElementById('agent-name').value}</p>
         <h3>Products:</h3>
-        <ul>${orderProducts.map(p => `<li>${p.name} (₱ ${p.price.toFixed(2)} x ${p.quantity})${p.chili_sauce ? ' + Chili Sauce' : ''}</li>`).join('')}</ul>
+        <ul>${orderProducts.map(p => {
+            const chiliSauceProduct = products.find(prod => prod.id == chiliSauceId);
+            const baseName = p.id == chiliSauceId ? 'Extra Chili Sauce (100 Grams)' : p.name;
+            const displayName = (p.chili_sauce && p.id != chiliSauceId) ? `${baseName} with Chili Sauce` : baseName;
+            const price = p.chili_sauce && p.id != chiliSauceId && chiliSauceProduct 
+                ? p.price + chiliSauceProduct.selling_price 
+                : p.price;
+            const unit = p.quantity === 1 ? 'pack' : 'packs';
+            return `<li>${displayName} (₱ ${price.toFixed(2)} x ${p.quantity} ${unit})</li>`;
+        }).join('')}</ul>
         <p><strong>Total Amount:</strong> ₱ ${totalAmount.toFixed(2)}</p>
     `;
     document.getElementById('review-modal').style.display = 'flex';
@@ -258,6 +291,7 @@ async function confirmOrder() {
     const orderData = JSON.parse(localStorage.getItem('order-data'));
     if (!orderData) return;
     const { vendorId, products: orderProducts, totalAmount } = orderData;
+    const agentId = document.getElementById('agent-id').value; // Get agentId
     document.getElementById('review-modal').style.display = 'none';
     document.getElementById('loading-modal').style.display = 'flex';
 
@@ -287,7 +321,8 @@ async function confirmOrder() {
         total_amount: totalAmount,
         status: 'pending',
         placed_by: 'vendor',
-        products: orderProducts
+        products: orderProducts,
+        agent_id: agentId || null // Add agent_id here
     });
     if (error) return showMessageModal('Error', 'Error placing order: ' + error.message);
 
