@@ -5,9 +5,9 @@ let expandedStates = {};
 async function fetchOrders(statusFilter = 'pending', sortOrder = 'desc') {
     const { data: orders, error } = await supabase
         .from('orders')
-        .select('*, vendors(name), sales_agents(name)')
+        .select('*, vendors(name, contact_number), sales_agents(name)') // Add contact_number
         .eq('status', statusFilter)
-        .order('order_date', { ascending: sortOrder === 'asc' }); // Dynamic sort
+        .order('order_date', { ascending: sortOrder === 'asc' });
 
     if (error) {
         showMessageModal('Error', 'Error fetching orders: ' + error.message);
@@ -27,7 +27,7 @@ function renderOrders(orders) {
             const displayName = p.chili_sauce ? `${baseName} with Chili Sauce` : baseName;
             const chiliSaucePrice = order.products.some(prod => prod.name === 'Chili Sauce (100grams)') 
                 ? order.products.find(prod => prod.name === 'Chili Sauce (100grams)').price 
-                : 0; // Assume chili sauce price if present
+                : 0;
             const unitPrice = p.chili_sauce && p.name !== 'Chili Sauce (100grams)' 
                 ? p.price + chiliSaucePrice 
                 : p.price;
@@ -39,15 +39,21 @@ function renderOrders(orders) {
         const lastUpdated = order.payment_updated_at ? new Date(order.payment_updated_at) : new Date(order.order_date);
         const lastUpdatedStr = lastUpdated.toLocaleString('en-US', { timeZone: 'Asia/Manila', month: 'short', day: 'numeric', year: 'numeric', hour: 'numeric', minute: 'numeric', hour12: true });
 
+        const contactNumber = order.vendors.contact_number || 'N/A';
+        const contactLink = contactNumber !== 'N/A' 
+            ? `<a href="tel:${contactNumber}" class="contact-link">${contactNumber}</a>` 
+            : contactNumber;
+
         const orderBox = document.createElement('div');
         orderBox.className = 'order-box';
         orderBox.innerHTML = `
             <div class="order-header" onclick="toggleOrderDetails(${order.id})">
-                <h3>Vendor: ${order.vendors.name}</h3>
+                <h3>Vendor: ${order.vendors.name} || Number: ${contactLink}</h3>
                 <span class="status ${order.status}">${order.status}</span>
                 <span class="toggle-icon" id="toggle-icon-${order.id}">${expandedStates[order.id] ? '-' : '+'}</span>
             </div>
             <div class="order-details" id="order-details-${order.id}" style="display: ${expandedStates[order.id] ? 'block' : 'none'}">
+                <br><br>
                 <p><strong>Items:</strong> ${productsList}</p>
                 <p><strong>Agent Name:</strong> ${order.sales_agents?.name || 'N/A'}</p>
                 <p><strong>Total:</strong> ₱${order.total_amount.toFixed(2)}</p>
