@@ -22,7 +22,20 @@ function renderOrders(orders) {
     const orderList = document.getElementById('order-list');
     orderList.innerHTML = '';
     orders.forEach(order => {
-        const productsList = order.products.map(p => `${p.name}: ${p.quantity}`).join(', ');
+        const productsList = order.products.map(p => {
+            const baseName = p.name === 'Chili Sauce (100grams)' ? 'Extra Chili Sauce (100 Grams)' : p.name;
+            const displayName = p.chili_sauce ? `${baseName} with Chili Sauce` : baseName;
+            const chiliSaucePrice = order.products.some(prod => prod.name === 'Chili Sauce (100grams)') 
+                ? order.products.find(prod => prod.name === 'Chili Sauce (100grams)').price 
+                : 0; // Assume chili sauce price if present
+            const unitPrice = p.chili_sauce && p.name !== 'Chili Sauce (100grams)' 
+                ? p.price + chiliSaucePrice 
+                : p.price;
+            const totalPrice = unitPrice * p.quantity;
+            const unit = p.quantity === 1 ? 'pack' : 'packs';
+            return `${displayName} (₱ ${unitPrice.toFixed(2)} x ${p.quantity} ${unit}) = ₱ ${totalPrice.toFixed(2)}`;
+        }).join(', ');
+
         const lastUpdated = order.payment_updated_at ? new Date(order.payment_updated_at) : new Date(order.order_date);
         const lastUpdatedStr = lastUpdated.toLocaleString('en-US', { timeZone: 'Asia/Manila', month: 'short', day: 'numeric', year: 'numeric', hour: 'numeric', minute: 'numeric', hour12: true });
 
