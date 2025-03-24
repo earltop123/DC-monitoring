@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Delivery Management</title>
     <link rel="stylesheet" href="css/delivery-management.css">
@@ -25,8 +25,8 @@
 
         <div class="filters">
             <label for="status-filter">Filter by Status:</label>
-            <select id="status-filter">
-                <option value="pending">Pending</option>
+            <select id="status-filter" onchange="fetchOrders(this.value)">
+                <option value="pending" selected>Pending</option>
                 <option value="delivered">Delivered</option>
                 <option value="cancelled">Cancelled</option>
             </select>
@@ -66,15 +66,8 @@
         </div>
     </div>
 
-    <div id="message-modal" class="modal" style="display: none;">
-        <div class="modal-content">
-            <h2 id="message-title"></h2>
-            <p id="message-text"></p>
-            <button onclick="closeMessageModal()">OK</button>
-        </div>
-    </div>
-
     <script defer src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script defer src="js/common.js"></script>
     <script defer src="js/delivery-management.js"></script>
 </body>
 </html>
