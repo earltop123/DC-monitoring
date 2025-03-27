@@ -77,7 +77,7 @@ async function fetchSummaryData() {
 
     let orderQuery = supabase
         .from('orders')
-        .select('id, vendor_id, order_date, products', { count: 'exact' })
+        .select('id, vendor_id, order_date, products')
         .eq('placed_by', 'vendor')
         .in('vendor_id', vendorIds);
 
@@ -87,15 +87,19 @@ async function fetchSummaryData() {
             .lte('order_date', endDate);
     }
 
-    const { data: orders, count: orderCount, error: orderError } = await orderQuery;
+    const { data: orders, error: orderError } = await orderQuery;
 
     if (orderError) {
         console.error('Error fetching orders:', orderError.message);
         return;
     }
 
+    const totalPacks = orders.reduce((sum, order) => {
+        return sum + order.products.reduce((acc, product) => acc + product.quantity, 0);
+    }, 0);
+
     document.getElementById('total-vendors').textContent = vendorCount || 0;
-    document.getElementById('total-orders').textContent = orderCount || 0;
+    document.getElementById('total-orders').textContent = totalPacks || 0;
 
     const vendorStats = vendors.map(vendor => {
         const vendorOrders = orders.filter(order => order.vendor_id === vendor.id);
