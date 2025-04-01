@@ -1,4 +1,3 @@
-// order-placement.js
 let products = [];
 let chiliSauceId = null;
 let productRows = 1;
@@ -20,10 +19,9 @@ function confirmChiliSauce(confirm) {
     if (modal) modal.style.display = 'none';
     
     if (!confirm && pendingOrderData) {
-        removeExtraChiliSauce(); // Remove from form
-        // Update pendingOrderData to exclude extra chili sauce
+        removeExtraChiliSauce();
         pendingOrderData.products = pendingOrderData.products.filter(p => p.id != chiliSauceId);
-        pendingOrderData.totalAmount = updateTotalAmount(); // Recalculate total
+        pendingOrderData.totalAmount = updateTotalAmount();
     }
     
     showReviewModal(pendingOrderData);
@@ -41,8 +39,7 @@ function removeExtraChiliSauce() {
         return true;
     });
     if (!filteredRows.length) addProductRow();
-    resetStock(); // Reset stock after removal
-    updateTotalAmount(); // Ensure UI reflects new total
+    updateTotalAmount();
 }
 
 // Vendor suggestions
@@ -53,22 +50,16 @@ document.getElementById('vendor-name').addEventListener('input', async (e) => {
         suggestions.innerHTML = '';
         document.getElementById('vendor-id').value = '';
         document.getElementById('agent-name').value = '';
-        document.getElementById('agent-id').value = ''; // Clear agent-id
+        document.getElementById('agent-id').value = '';
         return;
     }
 
-    // Fetch vendors
-    const { data: vendors, error: vendorError } = await supabase
+    const { data: vendors, error } = await supabase
         .from('vendors')
         .select('id, name, agent_id')
         .ilike('name', `%${query}%`);
-    if (vendorError) {
-        console.error('Error fetching vendors:', vendorError.message);
-        return;
-    }
-    console.log('Vendors fetched:', vendors); // Debug: Check vendor data
+    if (error) return console.error('Error fetching vendors:', error.message);
 
-    // Fetch agents
     const agentIds = vendors.map(v => v.agent_id).filter(id => id);
     let agents = [];
     if (agentIds.length > 0) {
@@ -76,21 +67,17 @@ document.getElementById('vendor-name').addEventListener('input', async (e) => {
             .from('sales_agents')
             .select('id, name')
             .in('id', agentIds);
-        if (agentError) {
-            console.error('Error fetching agents:', agentError.message);
-        } else {
-            agents = agentData || [];
-        }
+        if (agentError) console.error('Error fetching agents:', agentError.message);
+        else agents = agentData || [];
     }
 
-    // Map vendor and agent data
     const vendorData = vendors.map(vendor => {
         const agent = agents.find(a => a.id === vendor.agent_id);
         return {
             id: vendor.id,
             name: vendor.name,
             agent_name: agent?.name || 'No Agent Assigned',
-            agent_id: vendor.agent_id // Include agent_id
+            agent_id: vendor.agent_id
         };
     });
 
@@ -99,20 +86,19 @@ document.getElementById('vendor-name').addEventListener('input', async (e) => {
     `).join('');
 });
 
-function selectVendor(id, name, agentName, agentId) { // Add agentId parameter
+function selectVendor(id, name, agentName, agentId) {
     document.getElementById('vendor-name').value = name;
     document.getElementById('vendor-id').value = id;
     document.getElementById('agent-name').value = agentName;
-    document.getElementById('agent-id').value = agentId || ''; // Store agentId in a hidden input
+    document.getElementById('agent-id').value = agentId || '';
     document.getElementById('vendor-suggestions').innerHTML = '';
-    console.log('Selected:', { id, name, agentName, agentId });
 }
 
 // Products
 async function populateProducts() {
-    const { data, error } = await supabase.from('products').select('id, name, selling_price, stock');
+    const { data, error } = await supabase.from('products').select('id, name, selling_price');
     if (error) return console.error('Error fetching products:', error.message);
-    products = data.map(p => ({ ...p, currentStock: p.stock }));
+    products = data;
     chiliSauceId = products.find(p => p.name === 'Chili Sauce (100grams)')?.id || null;
     if (!chiliSauceId) console.warn('Chili Sauce (100grams) not found.');
     updateAllProductSelects();
@@ -131,13 +117,11 @@ function updateAllProductSelects() {
                 const baseName = p.id == chiliSauceId ? 'Extra Chili Sauce (100 Grams)' : p.name;
                 let displayName = baseName;
                 let displayPrice = p.selling_price;
-                
                 if (p.id != chiliSauceId && chiliSauceChecked && chiliSauceId && chiliSauceProduct) {
                     displayName = `${baseName} with Chili Sauce`;
-                    displayPrice += chiliSauceProduct.selling_price; // Add chili sauce price
+                    displayPrice += chiliSauceProduct.selling_price;
                 }
-                
-                return `<option value="${p.id}">${displayName} (Php ${displayPrice.toFixed(2)} Stock: ${p.currentStock})</option>`;
+                return `<option value="${p.id}">${displayName} (₱ ${displayPrice.toFixed(2)})</option>`;
             }).join('');
         
         select.value = currentValue || '';
@@ -161,7 +145,6 @@ async function populateCities() {
         console.error('Error fetching cities:', error.message);
         return;
     }
-    // Sort cities alphabetically by name
     const sortedCities = data.sort((a, b) => a.name.localeCompare(b.name));
     const citySelect = document.getElementById('city-select');
     citySelect.innerHTML = '<option value="">Select City</option>' + 
@@ -190,19 +173,11 @@ function addProductRow() {
 
 function removeProductRow(btn) {
     btn.parentElement.remove();
-    resetStock();
     updateTotalAmount();
 }
 
-function resetStock() {
-    products.forEach(p => p.currentStock = p.stock);
-    updateAllProductSelects();
-}
-
-// Update this function to return the total
 function updateTotalAmount() {
     let total = 0;
-    resetStock();
     document.querySelectorAll('.product-row').forEach(row => {
         const productId = row.querySelector('.product-select').value;
         if (!productId) return;
@@ -211,13 +186,9 @@ function updateTotalAmount() {
         const product = products.find(p => p.id == productId);
         if (product) {
             let rowTotal = product.selling_price * quantity;
-            product.currentStock -= quantity;
             if (chiliSauce && product.id != chiliSauceId && chiliSauceId) {
                 const chili = products.find(p => p.id == chiliSauceId);
-                if (chili) {
-                    rowTotal += chili.selling_price * quantity;
-                    chili.currentStock -= quantity;
-                }
+                if (chili) rowTotal += chili.selling_price * quantity;
             }
             total += rowTotal;
             row.querySelector('.price').textContent = `₱ ${rowTotal.toFixed(2)}`;
@@ -228,7 +199,6 @@ function updateTotalAmount() {
     return total;
 }
 
-// Real-time event listeners
 document.addEventListener('input', (e) => {
     const row = e.target.closest('.product-row');
     if (!row) return;
@@ -244,7 +214,7 @@ document.addEventListener('change', (e) => {
         toggleChiliSauceVisibility(row, e.target.value == chiliSauceId);
         updateTotalAmount();
     } else if (e.target.classList.contains('chili-sauce')) {
-        updateAllProductSelects(); // Update dropdown when checkbox changes
+        updateAllProductSelects();
         updateTotalAmount();
     }
 });
@@ -271,7 +241,6 @@ function showReviewModal(orderData) {
     localStorage.setItem('order-data', JSON.stringify(orderData));
 }
 
-// Form submission
 document.getElementById('order-form').addEventListener('submit', async (e) => {
     e.preventDefault();
     const vendorId = document.getElementById('vendor-id').value;
@@ -303,10 +272,10 @@ document.getElementById('order-form').addEventListener('submit', async (e) => {
     const extraChiliSauceCount = orderProducts.reduce((sum, p) => sum + (p.id == chiliSauceId ? p.quantity : 0), 0);
     (bundledChiliSauceCount && extraChiliSauceCount) ? showChiliSauceModal(bundledChiliSauceCount, extraChiliSauceCount) : showReviewModal(orderData);
 });
+
 function editOrder() {
     document.getElementById('review-modal').style.display = 'none';
     localStorage.removeItem('order-data');
-    resetStock();
     updateTotalAmount();
 }
 
@@ -318,26 +287,6 @@ async function confirmOrder() {
     document.getElementById('review-modal').style.display = 'none';
     document.getElementById('loading-modal').style.display = 'flex';
 
-    for (const product of orderProducts) {
-        const { data, error } = await supabase.from('products').select('stock').eq('id', product.id).single();
-        if (error || data.stock < product.quantity) return handleStockError(product.name);
-        if (product.chili_sauce && chiliSauceId) {
-            const { data: chiliData, error: chiliError } = await supabase.from('products').select('stock').eq('id', chiliSauceId).single();
-            if (chiliError || chiliData.stock < product.quantity) return handleStockError('Chili Sauce');
-        }
-    }
-
-    const totalChiliSauceQuantity = orderProducts.reduce((sum, p) => sum + (p.chili_sauce || p.id == chiliSauceId ? p.quantity : 0), 0);
-    if (chiliSauceId) {
-        const { data, error } = await supabase.from('products').select('stock').eq('id', chiliSauceId).single();
-        if (error || data.stock < totalChiliSauceQuantity) return handleStockError('Chili Sauce');
-    }
-
-    for (const product of orderProducts) {
-        await updateStock(product.id, product.quantity);
-        if (product.chili_sauce && chiliSauceId) await updateStock(chiliSauceId, product.quantity);
-    }
-
     const { error } = await supabase.from('orders').insert({
         vendor_id: vendorId,
         order_date: new Date().toISOString(),
@@ -346,22 +295,12 @@ async function confirmOrder() {
         placed_by: 'vendor',
         products: orderProducts,
         agent_id: agentId || null,
-        city_id: cityId // Add city_id to order
+        city_id: cityId
     });
     if (error) return showMessageModal('Error', 'Error placing order: ' + error.message);
 
     document.getElementById('loading-modal').style.display = 'none';
     showToast('Order placed successfully!', resetForm);
-}
-
-function handleStockError(item) {
-    document.getElementById('loading-modal').style.display = 'none';
-    showMessageModal('Error', `Insufficient stock for ${item}`);
-}
-
-async function updateStock(productId, quantity) {
-    const { data } = await supabase.from('products').select('stock').eq('id', productId).single();
-    await supabase.from('products').update({ stock: data.stock - quantity }).eq('id', productId);
 }
 
 function resetForm() {
@@ -385,7 +324,6 @@ function resetForm() {
     populateProducts();
 }
 
-// Init
 async function init() {
     await populateProducts();
     await populateCities();
