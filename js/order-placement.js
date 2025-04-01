@@ -263,18 +263,27 @@ document.getElementById('order-form').addEventListener('submit', async (e) => {
     e.preventDefault();
     const vendorId = document.getElementById('vendor-id').value;
     if (!vendorId) return showMessageModal('Error', 'Please select a vendor');
+
     const orderProducts = Array.from(document.querySelectorAll('.product-row')).map(row => {
         const productId = row.querySelector('.product-select').value;
         const product = products.find(p => p.id == productId);
         if (!product) return null;
         const quantity = parseInt(row.querySelector('.quantity').value) || 1;
         const chiliSauce = row.querySelector('.chili-sauce')?.checked || false;
-        return { id: product.id, name: product.name, price: product.selling_price, quantity, chili_sauce: chiliSauce && product.id != chiliSauceId };
+        let price = product.selling_price;
+        if (chiliSauce && product.id != chiliSauceId && chiliSauceId) {
+            const chili = products.find(p => p.id == chiliSauceId);
+            if (chili) price += chili.selling_price; // Add chili sauce price (20 pesos)
+        }
+        return { id: product.id, name: product.name, price, quantity, chili_sauce: chiliSauce && product.id != chiliSauceId };
     }).filter(p => p);
+
     if (!orderProducts.length) return showMessageModal('Error', 'Please select a product in all rows');
-    const totalAmount = updateTotalAmount(); // Capture the returned total
+
+    const totalAmount = updateTotalAmount(); // This already includes chili sauce in UI
     const orderData = { vendorId, products: orderProducts, totalAmount };
     pendingOrderData = orderData;
+
     const bundledChiliSauceCount = orderProducts.reduce((sum, p) => sum + (p.chili_sauce ? p.quantity : 0), 0);
     const extraChiliSauceCount = orderProducts.reduce((sum, p) => sum + (p.id == chiliSauceId ? p.quantity : 0), 0);
     (bundledChiliSauceCount && extraChiliSauceCount) ? showChiliSauceModal(bundledChiliSauceCount, extraChiliSauceCount) : showReviewModal(orderData);
@@ -291,7 +300,7 @@ async function confirmOrder() {
     const orderData = JSON.parse(localStorage.getItem('order-data'));
     if (!orderData) return;
     const { vendorId, products: orderProducts, totalAmount } = orderData;
-    const agentId = document.getElementById('agent-id').value; // Get agentId
+    const agentId = document.getElementById('agent-id').value;
     document.getElementById('review-modal').style.display = 'none';
     document.getElementById('loading-modal').style.display = 'flex';
 
@@ -318,11 +327,11 @@ async function confirmOrder() {
     const { error } = await supabase.from('orders').insert({
         vendor_id: vendorId,
         order_date: new Date().toISOString(),
-        total_amount: totalAmount,
+        total_amount: totalAmount, // This now includes chili sauce cost
         status: 'pending',
         placed_by: 'vendor',
         products: orderProducts,
-        agent_id: agentId || null // Add agent_id here
+        agent_id: agentId || null
     });
     if (error) return showMessageModal('Error', 'Error placing order: ' + error.message);
 
