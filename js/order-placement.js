@@ -155,6 +155,19 @@ function toggleChiliSauceVisibility(row, hide) {
     }
 }
 
+async function populateCities() {
+    const { data, error } = await supabase.from('cities').select('id, name');
+    if (error) {
+        console.error('Error fetching cities:', error.message);
+        return;
+    }
+    // Sort cities alphabetically by name
+    const sortedCities = data.sort((a, b) => a.name.localeCompare(b.name));
+    const citySelect = document.getElementById('city-select');
+    citySelect.innerHTML = '<option value="">Select City</option>' + 
+        sortedCities.map(city => `<option value="${city.id}">${city.name}</option>`).join('');
+}
+
 function addProductRow() {
     const container = document.getElementById('products-container');
     container.insertAdjacentHTML('beforeend', `
@@ -262,7 +275,9 @@ function showReviewModal(orderData) {
 document.getElementById('order-form').addEventListener('submit', async (e) => {
     e.preventDefault();
     const vendorId = document.getElementById('vendor-id').value;
+    const cityId = document.getElementById('city-select').value;
     if (!vendorId) return showMessageModal('Error', 'Please select a vendor');
+    if (!cityId) return showMessageModal('Error', 'Please select a city');
 
     const orderProducts = Array.from(document.querySelectorAll('.product-row')).map(row => {
         const productId = row.querySelector('.product-select').value;
@@ -273,22 +288,21 @@ document.getElementById('order-form').addEventListener('submit', async (e) => {
         let price = product.selling_price;
         if (chiliSauce && product.id != chiliSauceId && chiliSauceId) {
             const chili = products.find(p => p.id == chiliSauceId);
-            if (chili) price += chili.selling_price; // Add chili sauce price (20 pesos)
+            if (chili) price += chili.selling_price;
         }
         return { id: product.id, name: product.name, price, quantity, chili_sauce: chiliSauce && product.id != chiliSauceId };
     }).filter(p => p);
 
     if (!orderProducts.length) return showMessageModal('Error', 'Please select a product in all rows');
 
-    const totalAmount = updateTotalAmount(); // This already includes chili sauce in UI
-    const orderData = { vendorId, products: orderProducts, totalAmount };
+    const totalAmount = updateTotalAmount();
+    const orderData = { vendorId, cityId, products: orderProducts, totalAmount };
     pendingOrderData = orderData;
 
     const bundledChiliSauceCount = orderProducts.reduce((sum, p) => sum + (p.chili_sauce ? p.quantity : 0), 0);
     const extraChiliSauceCount = orderProducts.reduce((sum, p) => sum + (p.id == chiliSauceId ? p.quantity : 0), 0);
     (bundledChiliSauceCount && extraChiliSauceCount) ? showChiliSauceModal(bundledChiliSauceCount, extraChiliSauceCount) : showReviewModal(orderData);
 });
-
 function editOrder() {
     document.getElementById('review-modal').style.display = 'none';
     localStorage.removeItem('order-data');
@@ -299,7 +313,7 @@ function editOrder() {
 async function confirmOrder() {
     const orderData = JSON.parse(localStorage.getItem('order-data'));
     if (!orderData) return;
-    const { vendorId, products: orderProducts, totalAmount } = orderData;
+    const { vendorId, cityId, products: orderProducts, totalAmount } = orderData;
     const agentId = document.getElementById('agent-id').value;
     document.getElementById('review-modal').style.display = 'none';
     document.getElementById('loading-modal').style.display = 'flex';
@@ -327,11 +341,12 @@ async function confirmOrder() {
     const { error } = await supabase.from('orders').insert({
         vendor_id: vendorId,
         order_date: new Date().toISOString(),
-        total_amount: totalAmount, // This now includes chili sauce cost
+        total_amount: totalAmount,
         status: 'pending',
         placed_by: 'vendor',
         products: orderProducts,
-        agent_id: agentId || null
+        agent_id: agentId || null,
+        city_id: cityId // Add city_id to order
     });
     if (error) return showMessageModal('Error', 'Error placing order: ' + error.message);
 
@@ -371,4 +386,9 @@ function resetForm() {
 }
 
 // Init
-populateProducts();
+async function init() {
+    await populateProducts();
+    await populateCities();
+}
+
+init();
