@@ -231,22 +231,27 @@ async function updateOrderStatus(orderId, newStatus) {
         return;
     }
 
-    await supabase
+    const { error: historyError } = await supabase
         .from('history')
         .insert({
             entity_type: 'order',
             entity_id: orderId,
-            change_type: 'update',
+            change_type: 'edit', // Changed from 'update'
             details: { old: oldData, new: { status: newStatus, payment_method: finalPaymentMethod, amount_paid: amountPaid, amount_due: amountDue } }
         });
+    if (historyError) {
+        console.error('Error inserting history in updateOrderStatus:', historyError.message);
+    }
 
     document.getElementById('loading-modal').style.display = 'none';
     showToast('Order updated successfully!');
     closePaymentModal();
-    const currentFilter = document.getElementById('status-filter').value;
-    const cityFilter = document.getElementById('city-filter').value;
-    const sortOrder = document.getElementById('sort-order')?.value || 'desc';
-    fetchOrders(currentFilter, cityFilter, sortOrder);
+    // Reuse existing variables instead of redeclaring
+    fetchOrders(
+        document.getElementById('status-filter').value,
+        document.getElementById('city-filter').value,
+        document.getElementById('sort-order')?.value || 'desc'
+    );
 }
 
 // Submit partial payment
@@ -293,22 +298,27 @@ async function submitPartialPayment(orderId) {
         return;
     }
 
-    await supabase
+    const { error: historyError } = await supabase
         .from('history')
         .insert({
             entity_type: 'order',
             entity_id: orderId,
-            change_type: 'update',
+            change_type: 'edit', // Changed from 'update'
             details: { old: oldData, new: { status: 'delivered', payment_method: 'Partial', amount_paid: amountPaid, amount_due: amountDue } }
         });
+    if (historyError) {
+        console.error('Error inserting history in submitPartialPayment:', historyError.message);
+    }
 
     document.getElementById('loading-modal').style.display = 'none';
     showToast('Order marked as delivered with partial payment!');
     closePaymentModal();
-    const currentFilter = document.getElementById('status-filter').value;
-    const cityFilter = document.getElementById('city-filter').value;
-    const sortOrder = document.getElementById('sort-order')?.value || 'desc';
-    fetchOrders(currentFilter, cityFilter, sortOrder);
+    // Reuse existing variables instead of redeclaring
+    fetchOrders(
+        document.getElementById('status-filter').value,
+        document.getElementById('city-filter').value,
+        document.getElementById('sort-order')?.value || 'desc'
+    );
 }
 
 // Close payment modal
