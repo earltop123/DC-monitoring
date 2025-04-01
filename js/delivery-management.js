@@ -2,12 +2,18 @@
 let expandedStates = {};
 
 // Fetch and display orders
-async function fetchOrders(statusFilter = 'pending', sortOrder = 'desc') {
-    const { data: orders, error } = await supabase
+async function fetchOrders(statusFilter = 'pending', cityFilter = '', sortOrder = 'desc') {
+    let query = supabase
         .from('orders')
-        .select('*, vendors(name, contact_number), sales_agents(name)') // Add contact_number
+        .select('*, vendors(name, contact_number), sales_agents(name), cities(name)')
         .eq('status', statusFilter)
         .order('order_date', { ascending: sortOrder === 'asc' });
+
+    if (cityFilter) {
+        query = query.eq('city_id', cityFilter);
+    }
+
+    const { data: orders, error } = await query;
 
     if (error) {
         showMessageModal('Error', 'Error fetching orders: ' + error.message);
@@ -15,6 +21,20 @@ async function fetchOrders(statusFilter = 'pending', sortOrder = 'desc') {
     }
 
     renderOrders(orders);
+}
+
+// Populate city filter dropdown
+async function populateCityFilter() {
+    const { data, error } = await supabase.from('cities').select('id, name');
+    if (error) {
+        console.error('Error fetching cities:', error.message);
+        return;
+    }
+    // Sort cities alphabetically by name
+    const sortedCities = data.sort((a, b) => a.name.localeCompare(b.name));
+    const cityFilter = document.getElementById('city-filter');
+    cityFilter.innerHTML = '<option value="">All Cities</option>' + 
+        sortedCities.map(city => `<option value="${city.id}">${city.name}</option>`).join('');
 }
 
 // Render orders with preserved expand/collapse state
@@ -48,31 +68,31 @@ function renderOrders(orders) {
         const orderBox = document.createElement('div');
         orderBox.className = 'order-box';
         orderBox.innerHTML = `
-    <div class="order-header" onclick="toggleOrderDetails(${order.id})">
-        <h3>Vendor: ${vendorName} || Number: ${contactLink}</h3>
-        <span class="status ${order.status}">${order.status}</span>
-        <span class="toggle-icon" id="toggle-icon-${order.id}">${expandedStates[order.id] ? '-' : '+'}</span>
-    </div>
-    <div class="order-details" id="order-details-${order.id}" style="display: ${expandedStates[order.id] ? 'block' : 'none'}">
-        <br><br>
-        <p><strong>Items:</strong> ${productsList}</p>
-        <p><strong>Agent Name:</strong> ${order.sales_agents?.name || 'N/A'}</p>
-        <p><strong>Total:</strong> ₱${order.total_amount.toFixed(2)}</p>
-        <select id="payment-method-${order.id}" onchange="showPaymentModal(${order.id})" ${order.status !== 'pending' ? 'disabled' : ''}>
-            <option value="">Select Payment Method</option>
-            <option value="Cash" ${order.payment_method === 'Cash' ? 'selected' : ''}>Cash</option>
-            <option value="Online" ${order.payment_method === 'Online' ? 'selected' : ''}>Online</option>
-            <option value="Collectibles" ${order.payment_method === 'Collectibles' ? 'selected' : ''}>Collectibles</option>
-            <option value="Partial" ${order.payment_method === 'Partial' ? 'selected' : ''}>Partial Payment</option>
-        </select>
-        <div class="actions" ${order.status !== 'pending' ? 'style="display: none;"' : ''}>
-            <button class="cancel-btn" onclick="updateOrderStatus(${order.id}, 'cancelled')">Cancel</button>
-        </div>
-        <p><strong>Last Updated:</strong> ${lastUpdatedStr}</p>
-    </div>
-`;
+            <div class="order-header" onclick="toggleOrderDetails(${order.id})">
+                <h3>Vendor: ${vendorName} || Number: ${contactLink}</h3>
+                <span class="status ${order.status}">${order.status}</span>
+                <span class="toggle-icon" id="toggle-icon-${order.id}">${expandedStates[order.id] ? '-' : '+'}</span>
+            </div>
+            <div class="order-details" id="order-details-${order.id}" style="display: ${expandedStates[order.id] ? 'block' : 'none'}">
+                <br><br>
+                <p><strong>Items:</strong> ${productsList}</p>
+                <p><strong>Agent Name:</strong> ${order.sales_agents?.name || 'N/A'}</p>
+                <p><strong>City:</strong> ${order.cities?.name || 'N/A'}</p>
+                <p><strong>Total:</strong> ₱${order.total_amount.toFixed(2)}</p>
+                <select id="payment-method-${order.id}" onchange="showPaymentModal(${order.id})" ${order.status !== 'pending' ? 'disabled' : ''}>
+                    <option value="">Select Payment Method</option>
+                    <option value="Cash" ${order.payment_method === 'Cash' ? 'selected' : ''}>Cash</option>
+                    <option value="Online" ${order.payment_method === 'Online' ? 'selected' : ''}>Online</option>
+                    <option value="Collectibles" ${order.payment_method === 'Collectibles' ? 'selected' : ''}>Collectibles</option>
+                    <option value="Partial" ${order.payment_method === 'Partial' ? 'selected' : ''}>Partial Payment</option>
+                </select>
+                <div class="actions" ${order.status !== 'pending' ? 'style="display: none;"' : ''}>
+                    <button class="cancel-btn" onclick="updateOrderStatus(${order.id}, 'cancelled')">Cancel</button>
+                </div>
+                <p><strong>Last Updated:</strong> ${lastUpdatedStr}</p>
+            </div>
+        `;
         orderList.appendChild(orderBox);
-
     });
 }
 
@@ -91,80 +111,7 @@ function toggleOrderDetails(orderId) {
     }
 }
 
-
-// Update order status
-async function updateOrderStatus(orderId, newStatus) {
-    const paymentMethod = document.getElementById(`payment-method-${orderId}`).value;
-    if (!paymentMethod && newStatus === 'delivered') {
-        showMessageModal('Error', 'Please select a payment method before marking as delivered.');
-        return;
-    }
-
-    document.getElementById('loading-modal').style.display = 'flex';
-
-    const { data: oldData, error: fetchError } = await supabase
-        .from('orders')
-        .select('*')
-        .eq('id', orderId)
-        .single();
-
-    if (fetchError) {
-        document.getElementById('loading-modal').style.display = 'none';
-        showMessageModal('Error', 'Error fetching order: ' + fetchError.message);
-        return;
-    }
-
-    let amountPaid = 0;
-    let amountDue = 0;
-    let finalPaymentMethod = paymentMethod;
-
-    if (newStatus === 'delivered' || newStatus === 'cancelled') {
-        if (paymentMethod === 'Cash' || paymentMethod === 'Online') {
-            amountPaid = oldData.total_amount;
-            amountDue = 0;
-        } else if (paymentMethod === 'Collectibles') {
-            amountPaid = 0;
-            amountDue = oldData.total_amount;
-        } else if (paymentMethod === 'Partial') {
-            amountPaid = oldData.amount_paid || 0;
-            amountDue = oldData.amount_due || oldData.total_amount;
-        }
-    }
-
-    const { error } = await supabase
-        .from('orders')
-        .update({
-            status: newStatus,
-            payment_method: (newStatus === 'delivered' || newStatus === 'cancelled') ? finalPaymentMethod : null,
-            amount_paid: amountPaid,
-            amount_due: amountDue,
-            payment_updated_at: (newStatus === 'delivered' || newStatus === 'cancelled') ? new Date().toISOString() : null
-        })
-        .eq('id', orderId);
-
-    if (error) {
-        document.getElementById('loading-modal').style.display = 'none';
-        showMessageModal('Error', 'Error updating order: ' + error.message);
-        return;
-    }
-
-    await supabase
-        .from('history')
-        .insert({
-            entity_type: 'order',
-            entity_id: orderId,
-            change_type: 'update',
-            details: { old: oldData, new: { status: newStatus, payment_method: finalPaymentMethod, amount_paid: amountPaid, amount_due: amountDue } }
-        });
-
-    document.getElementById('loading-modal').style.display = 'none';
-    showToast('Order updated successfully!');
-    closePaymentModal(); // Auto-close modal
-    const currentFilter = document.getElementById('status-filter').value;
-    const sortOrder = document.getElementById('sort-order')?.value || 'desc';
-    fetchOrders(currentFilter, sortOrder); // Refresh list
-}
-
+// Show payment modal
 async function showPaymentModal(orderId) {
     const paymentMethod = document.getElementById(`payment-method-${orderId}`).value;
     if (!paymentMethod) return;
@@ -228,6 +175,81 @@ async function showPaymentModal(orderId) {
     modal.style.display = 'flex';
 }
 
+// Update order status
+async function updateOrderStatus(orderId, newStatus) {
+    const paymentMethod = document.getElementById(`payment-method-${orderId}`).value;
+    if (!paymentMethod && newStatus === 'delivered') {
+        showMessageModal('Error', 'Please select a payment method before marking as delivered.');
+        return;
+    }
+
+    document.getElementById('loading-modal').style.display = 'flex';
+
+    const { data: oldData, error: fetchError } = await supabase
+        .from('orders')
+        .select('*')
+        .eq('id', orderId)
+        .single();
+
+    if (fetchError) {
+        document.getElementById('loading-modal').style.display = 'none';
+        showMessageModal('Error', 'Error fetching order: ' + fetchError.message);
+        return;
+    }
+
+    let amountPaid = 0;
+    let amountDue = 0;
+    let finalPaymentMethod = paymentMethod || oldData.payment_method;
+
+    if (newStatus === 'delivered' || newStatus === 'cancelled') {
+        if (paymentMethod === 'Cash' || paymentMethod === 'Online') {
+            amountPaid = oldData.total_amount;
+            amountDue = 0;
+        } else if (paymentMethod === 'Collectibles') {
+            amountPaid = 0;
+            amountDue = oldData.total_amount;
+        } else if (paymentMethod === 'Partial') {
+            amountPaid = oldData.amount_paid || 0;
+            amountDue = oldData.amount_due || oldData.total_amount;
+        }
+    }
+
+    const { error } = await supabase
+        .from('orders')
+        .update({
+            status: newStatus,
+            payment_method: finalPaymentMethod,
+            amount_paid: amountPaid,
+            amount_due: amountDue,
+            payment_updated_at: (newStatus === 'delivered' || newStatus === 'cancelled') ? new Date().toISOString() : null
+        })
+        .eq('id', orderId);
+
+    if (error) {
+        document.getElementById('loading-modal').style.display = 'none';
+        showMessageModal('Error', 'Error updating order: ' + error.message);
+        return;
+    }
+
+    await supabase
+        .from('history')
+        .insert({
+            entity_type: 'order',
+            entity_id: orderId,
+            change_type: 'update',
+            details: { old: oldData, new: { status: newStatus, payment_method: finalPaymentMethod, amount_paid: amountPaid, amount_due: amountDue } }
+        });
+
+    document.getElementById('loading-modal').style.display = 'none';
+    showToast('Order updated successfully!');
+    closePaymentModal();
+    const currentFilter = document.getElementById('status-filter').value;
+    const cityFilter = document.getElementById('city-filter').value;
+    const sortOrder = document.getElementById('sort-order')?.value || 'desc';
+    fetchOrders(currentFilter, cityFilter, sortOrder);
+}
+
+// Submit partial payment
 async function submitPartialPayment(orderId) {
     const amountPaid = parseFloat(document.getElementById('partial-amount-paid').value) || 0;
     const totalAmount = parseFloat(document.getElementById('partial-amount-paid').dataset.totalAmount) || 0;
@@ -282,115 +304,36 @@ async function submitPartialPayment(orderId) {
 
     document.getElementById('loading-modal').style.display = 'none';
     showToast('Order marked as delivered with partial payment!');
-    closePaymentModal(); // Auto-close modal
+    closePaymentModal();
     const currentFilter = document.getElementById('status-filter').value;
+    const cityFilter = document.getElementById('city-filter').value;
     const sortOrder = document.getElementById('sort-order')?.value || 'desc';
-    fetchOrders(currentFilter, sortOrder); // Refresh list
+    fetchOrders(currentFilter, cityFilter, sortOrder);
 }
 
+// Close payment modal
 function closePaymentModal() {
     const modal = document.getElementById('partial-payment-modal');
     modal.style.display = 'none';
     modal.querySelector('.modal-content').classList.remove('payment-review');
 }
 
-// Close partial payment modal
-function closePartialPaymentModal() {
-    document.getElementById('partial-payment-modal').style.display = 'none';
-}
-
-// Event listener for status filter
-document.getElementById('status-filter').addEventListener('change', (e) => {
-    const sortOrder = document.getElementById('sort-order')?.value || 'desc'; // Default to desc
-    fetchOrders(e.target.value, sortOrder);
-});
-
-// Event listener for sort order
-document.getElementById('sort-order')?.addEventListener('change', (e) => {
-    const statusFilter = document.getElementById('status-filter').value;
-    fetchOrders(statusFilter, e.target.value);
-});
-
 // Initialize
 checkAuth('admin').then(isAuthenticated => {
     if (isAuthenticated) {
         const initialSortOrder = document.getElementById('sort-order')?.value || 'desc';
-        fetchOrders('pending', initialSortOrder); // Initial fetch with sort
+        const initialCityFilter = document.getElementById('city-filter')?.value || '';
+        fetchOrders('pending', initialCityFilter, initialSortOrder);
+        populateCityFilter();
 
         const channel = supabase
             .channel('orders-channel')
             .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'orders' }, (payload) => {
                 const currentFilter = document.getElementById('status-filter').value;
+                const cityFilter = document.getElementById('city-filter').value;
                 const sortOrder = document.getElementById('sort-order')?.value || 'desc';
-                fetchOrders(currentFilter, sortOrder);
+                fetchOrders(currentFilter, cityFilter, sortOrder);
             })
             .subscribe();
-
-        // Add event listener for partial payment form submission
-        const partialPaymentForm = document.getElementById('partial-payment-form');
-        if (partialPaymentForm) {
-            console.log('Partial payment form found, adding event listener');
-            partialPaymentForm.addEventListener('submit', async (e) => {
-                e.preventDefault();
-                console.log('Partial payment form submitted');
-                const orderId = document.getElementById('partial-order-id').value;
-                const amountPaid = parseFloat(document.getElementById('partial-amount-paid').value) || 0;
-                const totalAmount = parseFloat(document.getElementById('partial-amount-paid').dataset.totalAmount) || 0;
-                const paymentMethod = document.getElementById('partial-payment-method').value;
-
-                if (amountPaid >= totalAmount) {
-                    showMessageModal('Error', 'Amount paid cannot be greater than or equal to total amount for partial payment');
-                    return;
-                }
-
-                document.getElementById('loading-modal').style.display = 'flex';
-
-                const { data: oldData, error: fetchError } = await supabase
-                    .from('orders')
-                    .select('*')
-                    .eq('id', orderId)
-                    .single();
-
-                if (fetchError) {
-                    document.getElementById('loading-modal').style.display = 'none';
-                    showMessageModal('Error', 'Error fetching order: ' + fetchError.message);
-                    return;
-                }
-
-                const amountDue = totalAmount - amountPaid;
-
-                const { error } = await supabase
-                    .from('orders')
-                    .update({
-                        payment_method: 'Partial',
-                        amount_paid: amountPaid,
-                        amount_due: amountDue,
-                        payment_updated_at: new Date().toISOString()
-                    })
-                    .eq('id', orderId);
-
-                if (error) {
-                    document.getElementById('loading-modal').style.display = 'none';
-                    showMessageModal('Error', 'Error updating order: ' + error.message);
-                    return;
-                }
-
-                await supabase
-                    .from('history')
-                    .insert({
-                        entity_type: 'order',
-                        entity_id: orderId,
-                        change_type: 'update',
-                        details: { old: oldData, new: { payment_method: 'Partial', amount_paid: amountPaid, amount_due: amountDue } }
-                    });
-
-                document.getElementById('loading-modal').style.display = 'none';
-                showToast('Partial payment recorded successfully!', () => {
-                    closePartialPaymentModal();
-                });
-            });
-        } else {
-            console.error('Partial payment form not found in DOM during initialization');
-        }
     }
 });
