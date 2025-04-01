@@ -472,3 +472,19 @@ h1 {
 .contact-link:hover {
     color: #0056b3; /* Darker blue on hover */
 }
+
+.modal-content.payment-review {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.modal-content.payment-review .review-buttons {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+}
+
+.modal-content.payment-review .review-buttons button {
+    flex: 1;
+}
