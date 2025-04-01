@@ -25,12 +25,17 @@
 
         <div class="filters">
             <label for="status-filter">Filter by Status:</label>
-            <select id="status-filter" onchange="fetchOrders(this.value)">
+            <select id="status-filter" onchange="fetchOrders(this.value, document.getElementById('city-filter').value, document.getElementById('sort-order').value)">
                 <option value="pending" selected>Pending</option>
                 <option value="delivered">Delivered</option>
                 <option value="cancelled">Cancelled</option>
             </select>
-            <select id="sort-order">
+            <label for="city-filter">Filter by City:</label>
+            <select id="city-filter" onchange="fetchOrders(document.getElementById('status-filter').value, this.value, document.getElementById('sort-order').value)">
+                <option value="">All Cities</option>
+            </select>
+            <label for="sort-order">Sort by:</label>
+            <select id="sort-order" onchange="fetchOrders(document.getElementById('status-filter').value, document.getElementById('city-filter').value, this.value)">
                 <option value="desc">Sort by Date (Newest First)</option>
                 <option value="asc">Sort by Date (Oldest First)</option>
             </select>
