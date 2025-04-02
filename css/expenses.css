@@ -1,0 +1,170 @@
+body {
+    font-family: 'Segoe UI', 'Arial', sans-serif;
+    margin: 0;
+    background-color: #D2B48C; /* Light brown */
+    line-height: 1.6;
+}
+
+.container {
+    max-width: 800px; /* Narrower for form focus */
+    width: 95%;
+    margin: 30px auto;
+    background: #F5F5DC; /* Beige */
+    padding: 25px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    border-radius: 8px;
+}
+
+h1 {
+    color: #D32F2F;
+    font-size: 32px;
+    margin: 0 0 25px;
+    text-align: center;
+    font-weight: 600;
+}
+
+.filters {
+    display: flex;
+    gap: 20px;
+    margin-bottom: 30px;
+    justify-content: center;
+}
+
+.filters select {
+    padding: 10px;
+    border: 1px solid #D32F2F;
+    border-radius: 4px;
+    font-size: 14px;
+    background: #FFFFFF;
+    min-width: 150px;
+}
+
+.form-group {
+    margin-bottom: 20px;
+}
+
+.form-group label {
+    display: block;
+    color: #D32F2F;
+    font-size: 16px;
+    font-weight: 500;
+    margin-bottom: 5px;
+}
+
+.form-group input {
+    width: 100%;
+    padding: 10px;
+    border: 1px solid #D32F2F;
+    border-radius: 4px;
+    font-size: 14px;
+    background: #FFF5F5; /* Light red tint */
+    box-sizing: border-box;
+}
+
+button[type="submit"] {
+    display: block;
+    width: 100%;
+    padding: 12px;
+    background: #D32F2F;
+    color: #FFFFFF;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 16px;
+    font-weight: 500;
+}
+
+button[type="submit"]:hover {
+    background: #B71C1C;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+.menu-container {
+    position: absolute;
+    top: 20px;
+    left: 20px;
+}
+
+.menu-btn {
+    padding: 10px 20px;
+    background: #D32F2F;
+    color: #FFFFFF;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 16px;
+}
+
+.menu-btn:hover {
+    background: #B71C1C;
+}
+
+.menu-content {
+    display: none;
+    position: absolute;
+    background: #FFFFFF;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    border-radius: 8px;
+    padding: 10px 0;
+    min-width: 200px;
+}
+
+.menu-container:hover .menu-content {
+    display: block;
+}
+
+.menu-content button {
+    width: 100%;
+    padding: 10px 15px;
+    background: none;
+    border: none;
+    text-align: left;
+    font-size: 16px;
+    color: #333;
+    cursor: pointer;
+}
+
+.menu-content button:hover {
+    background: #FFF5F5;
+}
+
+.logout-btn {
+    position: absolute;
+    top: 20px;
+    right: 20px;
+    padding: 10px 20px;
+    background: #D32F2F;
+    color: #FFFFFF;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 16px;
+}
+
+.logout-btn:hover {
+    background: #B71C1C;
+}
+
+.toast-container {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    z-index: 1000;
+}
+
+.toast {
+    background: #D32F2F;
+    color: #FFFFFF;
+    padding: 10px 20px;
+    border-radius: 4px;
+    margin-bottom: 10px;
+    font-size: 16px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+.footer {
+    text-align: center;
+    padding: 20px 0;
+    color: #666;
+    font-size: 14px;
+}
