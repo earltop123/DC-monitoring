@@ -1,450 +1,308 @@
-// Pagination state for vendor log
-let currentPage = 1;
-const rowsPerPage = 20;
-let totalRows = 0;
-let filteredLogs = [];
+let expensesChart, trendsChart;
 
-async function populateAgentFilter() {
-    const { data, error } = await supabase
-        .from('sales_agents')
-        .select('id, name')
-        .order('name', { ascending: true });
+async function fetchDashboardData() {
+    const monthFilter = document.getElementById('month-filter').value;
+    const yearFilter = document.getElementById('year-filter').value;
+    const now = new Date();
+    const currentYear = now.getFullYear();
 
-    if (error) {
-        console.error('Error fetching agents:', error.message);
+    // Fetch sales data
+    let salesQuery = supabase
+        .from('orders')
+        .select('total_amount, amount_paid, order_date, products, payment_method')
+        .eq('status', 'delivered');
+    if (monthFilter || yearFilter) {
+        const year = yearFilter || currentYear;
+        if (monthFilter) {
+            const start = new Date(year, monthFilter - 1, 1).toISOString();
+            const end = new Date(year, monthFilter, 0).toISOString();
+            salesQuery = salesQuery.gte('order_date', start).lte('order_date', end);
+        } else {
+            const start = new Date(year, 0, 1).toISOString();
+            const end = new Date(year, 11, 31).toISOString();
+            salesQuery = salesQuery.gte('order_date', start).lte('order_date', end);
+        }
+    }
+    const { data: deliveredOrders, error: salesError } = await salesQuery;
+    if (salesError) {
+        console.error('Error fetching sales:', salesError.message);
         return;
     }
 
-    const agentFilter = document.getElementById('agent-filter');
-    agentFilter.innerHTML = '<option value="">All Agents</option>';
-    data.forEach(agent => {
-        const option = document.createElement('option');
-        option.value = agent.id;
-        option.textContent = agent.name;
-        agentFilter.appendChild(option);
-    });
+    // Cash Received
+    const cashReceived = deliveredOrders.reduce((sum, order) => sum + (order.amount_paid || order.total_amount), 0);
+    document.getElementById('cash-received').textContent = `₱ ${cashReceived.toFixed(2)}`;
 
-    const vendorAgent = document.getElementById('vendor-agent');
-    const editVendorAgent = document.getElementById('edit-vendor-agent');
-    vendorAgent.innerHTML = editVendorAgent.innerHTML = '';
-    data.forEach(agent => {
-        const option = document.createElement('option');
-        option.value = agent.id;
-        option.textContent = agent.name;
-        vendorAgent.appendChild(option.cloneNode(true));
-        editVendorAgent.appendChild(option);
-    });
-}
+    // Total Revenue
+    const totalRevenue = deliveredOrders.reduce((sum, order) => sum + order.total_amount, 0);
+    document.getElementById('total-revenue').textContent = `₱ ${totalRevenue.toFixed(2)}`;
 
-async function fetchDashboardData() {
-    const selectedAgentId = document.getElementById('agent-filter').value;
+    // Year to Date Sales (ignores month filter)
+    const { data: ytdOrders, error: ytdError } = await supabase
+        .from('orders')
+        .select('total_amount, amount_paid, order_date')
+        .eq('status', 'delivered')
+        .gte('order_date', `${yearFilter || currentYear}-01-01`)
+        .lte('order_date', `${yearFilter || currentYear}-12-31`);
+    if (ytdError) {
+        console.error('Error fetching YTD sales:', ytdError.message);
+        return;
+    }
+    const ytdSales = ytdOrders.reduce((sum, order) => sum + (order.amount_paid || order.total_amount), 0);
+    document.getElementById('ytd-sales').textContent = `₱ ${ytdSales.toFixed(2)}`;
 
-    let vendorQuery = supabase.from('vendors').select('*');
-    if (selectedAgentId) vendorQuery = vendorQuery.eq('agent_id', selectedAgentId);
-    const { data: vendors, error: vendorError } = await vendorQuery;
+    // Total Sales This Month
+    const monthSales = deliveredOrders
+        .filter(order => !monthFilter || new Date(order.order_date).getMonth() + 1 === parseInt(monthFilter))
+        .reduce((sum, order) => sum + (order.amount_paid || order.total_amount), 0);
+    document.getElementById('month-sales').textContent = `₱ ${monthSales.toFixed(2)}`;
 
+    // Fetch expenses
+    let expensesQuery = supabase
+        .from('expenses')
+        .select('amount, category, expense_date');
+    if (monthFilter || yearFilter) {
+        const year = yearFilter || currentYear;
+        if (monthFilter) {
+            const start = new Date(year, monthFilter - 1, 1).toISOString();
+            const end = new Date(year, monthFilter, 0).toISOString();
+            expensesQuery = expensesQuery.gte('expense_date', start).lte('expense_date', end);
+        } else {
+            const start = new Date(year, 0, 1).toISOString();
+            const end = new Date(year, 11, 31).toISOString();
+            expensesQuery = expensesQuery.gte('expense_date', start).lte('expense_date', end);
+        }
+    }
+    const { data: expenses, error: expensesError } = await expensesQuery;
+    if (expensesError) {
+        console.error('Error fetching expenses:', expensesError.message);
+        return;
+    }
+    const totalExpenses = expenses.reduce((sum, expense) => sum + expense.amount, 0);
+    document.getElementById('total-expenses').textContent = `₱ ${totalExpenses.toFixed(2)}`;
+
+    // Distributors and Investors Share
+    const totalPacks = deliveredOrders.reduce((sum, order) => {
+        return sum + order.products
+            .filter(p => p.name !== 'Chili Sauce (100grams)')
+            .reduce((qty, p) => qty + p.quantity, 0);
+    }, 0);
+    const distributorsShare = totalPacks * 15; // ₱15 per pack
+    const investorsShare = totalPacks * 13.5; // ₱13.5 per pack
+    document.getElementById('distributors-share').textContent = `₱ ${distributorsShare.toFixed(2)}`;
+    document.getElementById('investors-share').textContent = `₱ ${investorsShare.toFixed(2)}`;
+
+    // Remaining Supplier Credit
+    const supplierCreditBase = totalPacks * 121.5; // ₱121.5 per pack
+    let paymentsQuery = supabase
+        .from('stock_payments')
+        .select('amount, paid_at'); // Changed to paid_at
+    if (monthFilter || yearFilter) {
+        const year = yearFilter || currentYear;
+        if (monthFilter) {
+            const start = new Date(year, monthFilter - 1, 1).toISOString();
+            const end = new Date(year, monthFilter, 0).toISOString();
+            paymentsQuery = paymentsQuery.gte('paid_at', start).lte('paid_at', end);
+        } else {
+            const start = new Date(year, 0, 1).toISOString();
+            const end = new Date(year, 11, 31).toISOString();
+            paymentsQuery = paymentsQuery.gte('paid_at', start).lte('paid_at', end);
+        }
+    }
+    const { data: stockPayments, error: paymentsError } = await paymentsQuery;
+    if (paymentsError) {
+        console.error('Error fetching stock payments:', paymentsError.message);
+        return;
+    }
+    const totalPayments = stockPayments.reduce((sum, payment) => sum + payment.amount, 0);
+    const remainingSupplierCredit = supplierCreditBase - totalPayments;
+    document.getElementById('supplier-credit').textContent = `₱ ${remainingSupplierCredit.toFixed(2)}`;
+
+    // Net Profit
+    const netProfit = distributorsShare - totalExpenses;
+    document.getElementById('net-profit').textContent = `₱ ${netProfit.toFixed(2)}`;
+
+    // Pending Payments
+    const { data: pendingPaymentOrders, error: pendingError } = await supabase
+        .from('orders')
+        .select('amount_due, order_date')
+        .eq('status', 'delivered')
+        .gt('amount_due', 0)
+        .gte('order_date', monthFilter || yearFilter ? `${yearFilter || currentYear}-${monthFilter ? String(monthFilter).padStart(2, '0') : '01'}-01` : '1900-01-01')
+        .lte('order_date', monthFilter || yearFilter ? `${yearFilter || currentYear}-${monthFilter ? String(monthFilter).padStart(2, '0') : '12'}-${monthFilter ? new Date(yearFilter || currentYear, monthFilter, 0).getDate() : '31'}` : '9999-12-31');
+    if (pendingError) {
+        console.error('Error fetching pending payments:', pendingError.message);
+        return;
+    }
+    const pendingPayments = pendingPaymentOrders.reduce((sum, order) => sum + order.amount_due, 0);
+    document.getElementById('pending-payments').textContent = `₱ ${pendingPayments.toFixed(2)}`;
+
+    // Total Amount of Collectibles
+    const collectiblesTotal = deliveredOrders
+        .filter(order => order.payment_method === 'Collectibles')
+        .reduce((sum, order) => sum + (order.amount_due || 0), 0);
+    document.getElementById('collectibles-total').textContent = `₱ ${collectiblesTotal.toFixed(2)}`;
+
+    // Active Vendors
+    const { data: vendors, error: vendorError } = await supabase
+        .from('vendors')
+        .select('id');
     if (vendorError) {
         console.error('Error fetching vendors:', vendorError.message);
         return;
     }
-
-    document.getElementById('total-vendors').textContent = vendors.length;
-
-    const vendorTableBody = document.querySelector('#vendor-table tbody');
-    vendorTableBody.innerHTML = '';
-    vendors.forEach(vendor => {
-        const row = document.createElement('tr');
-        row.innerHTML = `
-            <td>${vendor.name}</td>
-            <td>${vendor.address}</td>
-            <td>${vendor.contact_number}</td>
-            <td>
-                <button class="edit-btn" onclick="openEditVendorModal(${vendor.id}, '${vendor.name}', '${vendor.address}', '${vendor.contact_number}', '${vendor.landmark || ''}', '${vendor.deployed_steamer}', '${vendor.deployed_food_cart}', '${vendor.notes || ''}', ${vendor.agent_id})">Edit</button>
-                <button class="delete-btn" onclick="deleteVendor(${vendor.id})">Delete</button>
-                <button class="history-btn" onclick="showHistory('vendor', ${vendor.id})">History</button>
-            </td>
-        `;
-        vendorTableBody.appendChild(row);
-    });
-
-    let orderQuery = supabase.from('orders').select('*, vendors(name)');
-    if (selectedAgentId) orderQuery = orderQuery.in('vendor_id', vendors.map(v => v.id));
-    const { data: orders, error: orderError } = await orderQuery;
-
-    if (orderError) {
-        console.error('Error fetching orders:', orderError.message);
-        return;
-    }
-
-    document.getElementById('total-orders').textContent = orders.length;
-
-    const orderTableBody = document.querySelector('#order-table tbody');
-    orderTableBody.innerHTML = '';
-    orders.forEach(order => {
-        const row = document.createElement('tr');
-        row.innerHTML = `
-            <td>${order.vendors.name}</td>
-            <td>${new Date(order.order_date).toLocaleString('en-US', { timeZone: 'Asia/Manila' })}</td>
-            <td>₱ ${order.total_amount.toFixed(2)}</td>
-            <td>${order.status}</td>
-            <td>
-                <button class="edit-btn" onclick="openEditOrderModal(${order.id}, ${order.vendor_id}, '${order.order_date}', ${order.total_amount}, '${order.status}')">Edit</button>
-                <button class="delete-btn" onclick="deleteOrder(${order.id})">Delete</button>
-                <button class="history-btn" onclick="showHistory('order', ${order.id})">History</button>
-            </td>
-        `;
-        orderTableBody.appendChild(row);
-    });
-
-    let logQuery = supabase.from('vendors').select('*');
-    if (selectedAgentId) logQuery = logQuery.eq('agent_id', selectedAgentId);
-    const { data: logVendors, error: logError } = await logQuery;
-
-    if (logError) {
-        console.error('Error fetching vendor log:', logError.message);
-        return;
-    }
-
-    const vendorIds = logVendors.map(v => v.id);
-    const { data: vendorOrders, error: ordersError } = await supabase
+    const vendorIds = vendors.map(v => v.id);
+    let activeQuery = supabase
         .from('orders')
-        .select('*')
+        .select('vendor_id')
+        .eq('status', 'delivered')
         .in('vendor_id', vendorIds);
-
-    if (ordersError) {
-        console.error('Error fetching vendor orders:', ordersError.message);
+    if (monthFilter || yearFilter) {
+        const year = yearFilter || currentYear;
+        if (monthFilter) {
+            const start = new Date(year, monthFilter - 1, 1).toISOString();
+            const end = new Date(year, monthFilter, 0).toISOString();
+            activeQuery = activeQuery.gte('order_date', start).lte('order_date', end);
+        } else {
+            const start = new Date(year, 0, 1).toISOString();
+            const end = new Date(year, 11, 31).toISOString();
+            activeQuery = activeQuery.gte('order_date', start).lte('order_date', end);
+        }
+    }
+    const { data: activeOrders, error: activeError } = await activeQuery;
+    if (activeError) {
+        console.error('Error fetching active vendors:', activeError.message);
         return;
     }
+    const activeVendorIds = [...new Set(activeOrders.map(o => o.vendor_id))];
+    document.getElementById('active-vendors').textContent = activeVendorIds.length;
 
-    filteredLogs = logVendors.map(vendor => {
-        const vendorOrdersList = vendorOrders.filter(o => o.vendor_id === vendor.id);
-        const deliveredOrders = vendorOrdersList.filter(o => o.status === 'delivered').length;
-        const lastOrder = vendorOrdersList.sort((a, b) => new Date(b.order_date) - new Date(a.order_date))[0];
-        const daysSinceLastOrder = lastOrder ? Math.floor((new Date() - new Date(lastOrder.order_date)) / (1000 * 60 * 60 * 24)) : 'No orders';
-        return { ...vendor, deliveredOrders, daysSinceLastOrder };
+    // Expenses by Category Pie Chart
+    const categoryTotals = expenses.reduce((acc, expense) => {
+        const category = expense.category || 'Uncategorized';
+        acc[category] = (acc[category] || 0) + expense.amount;
+        return acc;
+    }, {});
+    const expensesCtx = document.getElementById('expenses-chart').getContext('2d');
+    if (expensesChart) expensesChart.destroy();
+    expensesChart = new Chart(expensesCtx, {
+        type: 'pie',
+        data: {
+            labels: Object.keys(categoryTotals),
+            datasets: [{
+                data: Object.values(categoryTotals),
+                backgroundColor: ['#D32F2F', '#B71C1C', '#F5F5DC', '#D2B48C', '#FF9999'],
+                borderColor: '#FFFFFF',
+                borderWidth: 2
+            }]
+        },
+        options: {
+            responsive: true,
+            plugins: {
+                legend: { position: 'top', labels: { font: { size: 14 } } },
+                title: { display: false }
+            }
+        }
     });
 
-    totalRows = filteredLogs.length;
-    const totalPages = Math.ceil(totalRows / rowsPerPage);
-    currentPage = Math.min(currentPage, Math.max(1, totalPages));
-    updatePagination(totalPages);
+    // Monthly Trends Line Chart
+    const year = yearFilter || currentYear;
+    const monthlyData = Array(12).fill(0).map(() => ({ cash: 0, revenue: 0, paid: 0 }));
+    deliveredOrders.forEach(order => {
+        const month = new Date(order.order_date).getMonth();
+        monthlyData[month].cash += order.amount_paid || order.total_amount;
+        monthlyData[month].revenue += order.total_amount;
+    });
+    stockPayments.forEach(payment => {
+        const month = new Date(payment.paid_at).getMonth();
+        monthlyData[month].paid += payment.amount;
+    });
 
-    const start = (currentPage - 1) * rowsPerPage;
-    const end = start + rowsPerPage;
-    const paginatedLogs = filteredLogs.slice(start, end);
-
-    const logTableBody = document.querySelector('#vendor-log-table tbody');
-    logTableBody.innerHTML = '';
-    paginatedLogs.forEach(log => {
-        const row = document.createElement('tr');
-        row.innerHTML = `
-            <td>${log.name}</td>
-            <td>${log.address}</td>
-            <td>${log.contact_number}</td>
-            <td>${log.deliveredOrders}</td>
-            <td>${log.daysSinceLastOrder === 'No orders' ? 'No orders' : log.daysSinceLastOrder}</td>
-            <td>
-                <button class="edit-btn" onclick="openEditVendorModal(${log.id}, '${log.name}', '${log.address}', '${log.contact_number}', '${log.landmark || ''}', '${log.deployed_steamer}', '${log.deployed_food_cart}', '${log.notes || ''}', ${log.agent_id})">Edit</button>
-                <button class="delete-btn" onclick="deleteVendor(${log.id})">Delete</button>
-                <button class="history-btn" onclick="showHistory('vendor', ${log.id})">History</button>
-            </td>
-        `;
-        logTableBody.appendChild(row);
+    const trendsCtx = document.getElementById('trends-chart').getContext('2d');
+    if (trendsChart) trendsChart.destroy();
+    trendsChart = new Chart(trendsCtx, {
+        type: 'line',
+        data: {
+            labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'],
+            datasets: [
+                {
+                    label: 'Cash Received',
+                    data: monthlyData.map(d => d.cash),
+                    borderColor: '#D32F2F',
+                    fill: false,
+                    tension: 0.1
+                },
+                {
+                    label: 'Total Revenue',
+                    data: monthlyData.map(d => d.revenue),
+                    borderColor: '#B71C1C',
+                    fill: false,
+                    tension: 0.1
+                },
+                {
+                    label: 'Stock Paid',
+                    data: monthlyData.map(d => d.paid),
+                    borderColor: '#D2B48C',
+                    fill: false,
+                    tension: 0.1
+                }
+            ]
+        },
+        options: {
+            responsive: true,
+            scales: {
+                y: { beginAtZero: true, title: { display: true, text: 'Amount (₱)' } },
+                x: { title: { display: true, text: 'Month' } }
+            },
+            plugins: {
+                legend: { position: 'top', labels: { font: { size: 14 } } },
+                title: { display: false }
+            }
+        }
     });
 }
 
-function updatePagination(totalPages) {
-    const prevButton = document.getElementById('prev-page');
-    const nextButton = document.getElementById('next-page');
-    const pageInfo = document.getElementById('page-info');
-
-    prevButton.disabled = currentPage === 1;
-    nextButton.disabled = currentPage === totalPages || totalPages === 0;
-    pageInfo.textContent = `Page ${currentPage} of ${totalPages || 1}`;
+function populateYearFilter() {
+    const yearFilter = document.getElementById('year-filter');
+    const currentYear = new Date().getFullYear();
+    yearFilter.innerHTML = '<option value="">All Years</option>' + 
+        Array.from({ length: 5 }, (_, i) => `<option value="${currentYear - i}" ${currentYear - i === currentYear ? 'selected' : ''}>${currentYear - i}</option>`).join('');
+    yearFilter.value = currentYear;
 }
 
-document.getElementById('prev-page').addEventListener('click', () => {
-    if (currentPage > 1) {
-        currentPage--;
-        fetchDashboardData();
-    }
-});
-
-document.getElementById('next-page').addEventListener('click', () => {
-    const totalPages = Math.ceil(totalRows / rowsPerPage);
-    if (currentPage < totalPages) {
-        currentPage++;
-        fetchDashboardData();
-    }
-});
-
-document.getElementById('agent-filter').addEventListener('change', () => {
-    currentPage = 1;
-    fetchDashboardData();
-});
-
-function openAddVendorModal() {
-    document.getElementById('add-vendor-form').reset();
-    document.getElementById('add-vendor-modal').style.display = 'flex';
-}
-
-function closeAddVendorModal() {
-    document.getElementById('add-vendor-modal').style.display = 'none';
-}
-
-document.getElementById('add-vendor-form').addEventListener('submit', async (e) => {
-    e.preventDefault();
-    const agentId = document.getElementById('vendor-agent').value;
-    const name = document.getElementById('vendor-name').value;
-    const address = document.getElementById('vendor-address').value;
-    const contact = document.getElementById('vendor-contact').value;
-    const landmark = document.getElementById('vendor-landmark').value;
-    const steamer = document.getElementById('vendor-steamer').value;
-    const cart = document.getElementById('vendor-cart').value;
-    const notes = document.getElementById('vendor-notes').value;
-
-    if (!agentId || !name || !address || !contact) {
-        alert('Please fill in all required fields');
-        return;
-    }
-
-    document.getElementById('loading-modal').style.display = 'flex';
-
-    const { data, error } = await supabase
-        .from('vendors')
-        .insert({ agent_id: agentId, name, address, contact_number: contact, landmark, deployed_steamer: steamer, deployed_food_cart: cart, notes })
-        .select();
-
-    if (error) {
-        alert('Error adding vendor: ' + error.message);
-        document.getElementById('loading-modal').style.display = 'none';
-        return;
-    }
-
-    await supabase.from('history').insert({ entity_type: 'vendor', entity_id: data[0].id, change_type: 'create', details: { message: `Vendor ${name} created` } });
-
-    showToast('Vendor added successfully!', fetchDashboardData);
-    document.getElementById('loading-modal').style.display = 'none';
-    closeAddVendorModal();
-});
-
-function openEditVendorModal(id, name, address, contact, landmark, steamer, cart, notes, agentId) {
-    document.getElementById('edit-vendor-id').value = id;
-    document.getElementById('edit-vendor-agent').value = agentId;
-    document.getElementById('edit-vendor-name').value = name;
-    document.getElementById('edit-vendor-address').value = address;
-    document.getElementById('edit-vendor-contact').value = contact;
-    document.getElementById('edit-vendor-landmark').value = landmark;
-    document.getElementById('edit-vendor-steamer').value = steamer;
-    document.getElementById('edit-vendor-cart').value = cart;
-    document.getElementById('edit-vendor-notes').value = notes;
-    document.getElementById('edit-vendor-modal').style.display = 'flex';
-}
-
-function closeEditVendorModal() {
-    document.getElementById('edit-vendor-modal').style.display = 'none';
-}
-
-document.getElementById('edit-vendor-form').addEventListener('submit', async (e) => {
-    e.preventDefault();
-    const id = document.getElementById('edit-vendor-id').value;
-    const agentId = document.getElementById('edit-vendor-agent').value;
-    const name = document.getElementById('edit-vendor-name').value;
-    const address = document.getElementById('edit-vendor-address').value;
-    const contact = document.getElementById('edit-vendor-contact').value;
-    const landmark = document.getElementById('edit-vendor-landmark').value;
-    const steamer = document.getElementById('edit-vendor-steamer').value;
-    const cart = document.getElementById('edit-vendor-cart').value;
-    const notes = document.getElementById('edit-vendor-notes').value;
-
-    if (!agentId || !name || !address || !contact) {
-        alert('Please fill in all required fields');
-        return;
-    }
-
-    document.getElementById('loading-modal').style.display = 'flex';
-
-    const { data: oldData, error: fetchError } = await supabase.from('vendors').select('*').eq('id', id).single();
-
-    if (fetchError) {
-        alert('Error fetching vendor: ' + fetchError.message);
-        document.getElementById('loading-modal').style.display = 'none';
-        return;
-    }
-
-    const { error } = await supabase
-        .from('vendors')
-        .update({ agent_id: agentId, name, address, contact_number: contact, landmark, deployed_steamer: steamer, deployed_food_cart: cart, notes })
-        .eq('id', id);
-
-    if (error) {
-        alert('Error updating vendor: ' + error.message);
-        document.getElementById('loading-modal').style.display = 'none';
-        return;
-    }
-
-    await supabase.from('history').insert({
-        entity_type: 'vendor',
-        entity_id: id,
-        change_type: 'edit',
-        details: { old: oldData, new: { agent_id: agentId, name, address, contact_number: contact, landmark, deployed_steamer: steamer, deployed_food_cart: cart, notes } }
-    });
-
-    showToast('Vendor updated successfully!', fetchDashboardData);
-    document.getElementById('loading-modal').style.display = 'none';
-    closeEditVendorModal();
-});
-
-async function deleteVendor(id) {
-    if (!confirm('Are you sure you want to delete this vendor?')) return;
-
-    document.getElementById('loading-modal').style.display = 'flex';
-
-    const { data, error: fetchError } = await supabase.from('vendors').select('*').eq('id', id).single();
-
-    if (fetchError) {
-        alert('Error fetching vendor: ' + fetchError.message);
-        document.getElementById('loading-modal').style.display = 'none';
-        return;
-    }
-
-    const { error } = await supabase.from('vendors').delete().eq('id', id);
-
-    if (error) {
-        alert('Error deleting vendor: ' + error.message);
-        document.getElementById('loading-modal').style.display = 'none';
-        return;
-    }
-
-    await supabase.from('history').insert({ entity_type: 'vendor', entity_id: id, change_type: 'delete', details: { deleted: data } });
-
-    showToast('Vendor deleted successfully!', fetchDashboardData);
-    document.getElementById('loading-modal').style.display = 'none';
-}
-
-function openEditOrderModal(id, vendorId, orderDate, totalAmount, status) {
-    document.getElementById('edit-order-id').value = id;
-    document.getElementById('edit-order-vendor').value = vendorId;
-    document.getElementById('edit-order-date').value = orderDate.slice(0, 16);
-    document.getElementById('edit-order-amount').value = totalAmount;
-    document.getElementById('edit-order-status').value = status;
-    document.getElementById('edit-order-modal').style.display = 'flex';
-}
-
-function closeEditOrderModal() {
-    document.getElementById('edit-order-modal').style.display = 'none';
-}
-
-document.getElementById('edit-order-form').addEventListener('submit', async (e) => {
-    e.preventDefault();
-    const id = document.getElementById('edit-order-id').value;
-    const vendorId = document.getElementById('edit-order-vendor').value;
-    const orderDate = document.getElementById('edit-order-date').value;
-    const totalAmount = parseFloat(document.getElementById('edit-order-amount').value);
-    const status = document.getElementById('edit-order-status').value;
-
-    if (!vendorId || !orderDate || isNaN(totalAmount)) {
-        alert('Please fill in all required fields');
-        return;
-    }
-
-    document.getElementById('loading-modal').style.display = 'flex';
-
-    const { data: oldData, error: fetchError } = await supabase.from('orders').select('*').eq('id', id).single();
-
-    if (fetchError) {
-        alert('Error fetching order: ' + fetchError.message);
-        document.getElementById('loading-modal').style.display = 'none';
-        return;
-    }
-
-    const { error } = await supabase
-        .from('orders')
-        .update({ vendor_id: vendorId, order_date: orderDate, total_amount: totalAmount, status })
-        .eq('id', id);
-
-    if (error) {
-        alert('Error updating order: ' + error.message);
-        document.getElementById('loading-modal').style.display = 'none';
-        return;
-    }
-
-    await supabase.from('history').insert({
-        entity_type: 'order',
-        entity_id: id,
-        change_type: 'edit',
-        details: { old: oldData, new: { vendor_id: vendorId, order_date: orderDate, total_amount: totalAmount, status } }
-    });
-
-    showToast('Order updated successfully!', fetchDashboardData);
-    document.getElementById('loading-modal').style.display = 'none';
-    closeEditOrderModal();
-});
-
-async function deleteOrder(id) {
-    if (!confirm('Are you sure you want to delete this order?')) return;
-
-    document.getElementById('loading-modal').style.display = 'flex';
-
-    const { data, error: fetchError } = await supabase.from('orders').select('*').eq('id', id).single();
-
-    if (fetchError) {
-        alert('Error fetching order: ' + fetchError.message);
-        document.getElementById('loading-modal').style.display = 'none';
-        return;
-    }
-
-    const { error } = await supabase.from('orders').delete().eq('id', id);
-
-    if (error) {
-        alert('Error deleting order: ' + error.message);
-        document.getElementById('loading-modal').style.display = 'none';
-        return;
-    }
-
-    await supabase.from('history').insert({ entity_type: 'order', entity_id: id, change_type: 'delete', details: { deleted: data } });
-
-    showToast('Order deleted successfully!', fetchDashboardData);
-    document.getElementById('loading-modal').style.display = 'none';
-}
-
-async function showHistory(entityType, entityId) {
-    const { data, error } = await supabase
-        .from('history')
-        .select('*')
-        .eq('entity_type', entityType)
-        .eq('entity_id', entityId)
-        .order('changed_at', { ascending: false });
-
-    if (error) {
-        alert('Error fetching history: ' + error.message);
-        return;
-    }
-
-    const tbody = document.querySelector('#history-table tbody');
-    tbody.innerHTML = data.length === 0 ? '<tr><td colspan="3">No history found</td></tr>' : '';
-    data.forEach(entry => {
-        const row = document.createElement('tr');
-        row.innerHTML = `
-            <td>${entry.change_type}</td>
-            <td>${JSON.stringify(entry.details)}</td>
-            <td>${new Date(entry.changed_at).toLocaleString('en-US', { timeZone: 'Asia/Manila' })}</td>
-        `;
-        tbody.appendChild(row);
-    });
-
-    document.getElementById('history-modal').style.display = 'flex';
-}
-
-function closeHistoryModal() {
-    document.getElementById('history-modal').style.display = 'none';
+function populateMonthFilter() {
+    const monthFilter = document.getElementById('month-filter');
+    const currentMonth = new Date().getMonth() + 1;
+    monthFilter.value = currentMonth;
 }
 
 // Initialize
 checkAuth('admin').then(isAuthenticated => {
     if (isAuthenticated) {
-        renderMenu(['product', 'vendors', 'sales', 'delivery-management']); // Admin-specific pages
-        populateAgentFilter();
+        renderMenu(['product', 'vendors', 'sales-monitoring', 'delivery-management', 'expenses']);
+        populateYearFilter();
+        populateMonthFilter();
         fetchDashboardData();
+
+        supabase
+            .channel('orders-channel')
+            .on('postgres_changes', { event: '*', schema: 'public', table: 'orders' }, () => {
+                fetchDashboardData();
+            })
+            .subscribe();
+
+        supabase
+            .channel('expenses-channel')
+            .on('postgres_changes', { event: '*', schema: 'public', table: 'expenses' }, () => {
+                fetchDashboardData();
+            })
+            .subscribe();
+
+        supabase
+            .channel('stock-payments-channel')
+            .on('postgres_changes', { event: '*', schema: 'public', table: 'stock_payments' }, () => {
+                fetchDashboardData();
+            })
+            .subscribe();
     }
 });
