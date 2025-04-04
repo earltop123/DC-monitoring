@@ -38,7 +38,7 @@ async function deductStock(order) {
 async function fetchOrders(statusFilter = 'pending', cityFilter = '', sortOrder = 'desc') {
     let query = supabase
         .from('orders')
-        .select('*, vendors(name, contact_number), sales_agents(name), cities_2(name)')
+        .select('*, vendors(name, contact_number), sales_agents(name), cities(name)')
         .eq('status', statusFilter)
         .order('order_date', { ascending: sortOrder === 'asc' });
 
