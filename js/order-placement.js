@@ -139,16 +139,16 @@ function toggleChiliSauceVisibility(row, hide) {
     }
 }
 
-async function populateCities() {
-    const { data, error } = await supabase.from('cities').select('id, name');
+async function populateDistributors() {
+    const { data, error } = await supabase.from('distributors').select('id, name');
     if (error) {
-        console.error('Error fetching cities:', error.message);
+        console.error('Error fetching distributors:', error.message);
         return;
     }
-    const sortedCities = data.sort((a, b) => a.name.localeCompare(b.name));
-    const citySelect = document.getElementById('city-select');
-    citySelect.innerHTML = '<option value="">Select City</option>' + 
-        sortedCities.map(city => `<option value="${city.id}">${city.name}</option>`).join('');
+    const sortedDistributors = data.sort((a, b) => a.name.localeCompare(b.name));
+    const distributorSelect = document.getElementById('distributor-select');
+    distributorSelect.innerHTML = '<option value="">Select Distributor</option>' + 
+        sortedDistributors.map(dist => `<option value="${dist.id}">${dist.name}</option>`).join('');
 }
 
 function addProductRow() {
@@ -244,9 +244,9 @@ function showReviewModal(orderData) {
 document.getElementById('order-form').addEventListener('submit', async (e) => {
     e.preventDefault();
     const vendorId = document.getElementById('vendor-id').value;
-    const cityId = document.getElementById('city-select').value;
+    const distributorId = document.getElementById('distributor-select').value;
     if (!vendorId) return showMessageModal('Error', 'Please select a vendor');
-    if (!cityId) return showMessageModal('Error', 'Please select a city');
+    if (!distributorId) return showMessageModal('Error', 'Please select a distributor');
 
     const orderProducts = Array.from(document.querySelectorAll('.product-row')).map(row => {
         const productId = row.querySelector('.product-select').value;
@@ -265,7 +265,7 @@ document.getElementById('order-form').addEventListener('submit', async (e) => {
     if (!orderProducts.length) return showMessageModal('Error', 'Please select a product in all rows');
 
     const totalAmount = updateTotalAmount();
-    const orderData = { vendorId, cityId, products: orderProducts, totalAmount };
+    const orderData = { vendorId, distributorId, products: orderProducts, totalAmount };
     pendingOrderData = orderData;
 
     const bundledChiliSauceCount = orderProducts.reduce((sum, p) => sum + (p.chili_sauce ? p.quantity : 0), 0);
@@ -282,7 +282,7 @@ function editOrder() {
 async function confirmOrder() {
     const orderData = JSON.parse(localStorage.getItem('order-data'));
     if (!orderData) return;
-    const { vendorId, cityId, products: orderProducts, totalAmount } = orderData;
+    const { vendorId, distributorId, products: orderProducts, totalAmount } = orderData;
     const agentId = document.getElementById('agent-id').value;
     document.getElementById('review-modal').style.display = 'none';
     document.getElementById('loading-modal').style.display = 'flex';
@@ -295,7 +295,7 @@ async function confirmOrder() {
         placed_by: 'vendor',
         products: orderProducts,
         agent_id: agentId || null,
-        city_id: cityId
+        distributor_id: distributorId
     });
     if (error) return showMessageModal('Error', 'Error placing order: ' + error.message);
 
@@ -326,7 +326,7 @@ function resetForm() {
 
 async function init() {
     await populateProducts();
-    await populateCities();
+    await populateDistributors();
 }
 
 init();
