@@ -30,10 +30,11 @@
                 <option value="delivered">Delivered</option>
                 <option value="cancelled">Cancelled</option>
             </select>
-            <label for="city-filter">Filter by City:</label>
-            <select id="city-filter" onchange="fetchOrders(document.getElementById('status-filter').value, this.value, document.getElementById('sort-order').value)">
-                <option value="">All Cities</option>
-            </select>
+            <label for="city-filter">Filter by Distributor:</label>
+            <label for="distributor-filter">Filter by Distributor:</label>
+<select id="distributor-filter" onchange="fetchOrders(document.getElementById('status-filter').value, this.value, document.getElementById('sort-order').value)">
+    <option value="">All Distributors</option>
+</select>
             <label for="sort-order">Sort by:</label>
             <select id="sort-order" onchange="fetchOrders(document.getElementById('status-filter').value, document.getElementById('city-filter').value, this.value)">
                 <option value="desc">Sort by Date (Newest First)</option>
