@@ -85,7 +85,7 @@ function createModal(id, content) {
     return modal;
 }
 
-function renderMenu(allowedPages = ['products', 'vendors', 'sales', 'management-dashboard', 'agent-list']) {
+function renderMenu(allowedPages = ['products', 'vendors', 'sales', 'management-dashboard', 'agent-list', 'expenses', 'sales sonitoring']) {
     const menuContainer = document.querySelector('.menu-container');
     if (!menuContainer) {
         console.warn('Menu container not found in DOM');
@@ -100,6 +100,8 @@ function renderMenu(allowedPages = ['products', 'vendors', 'sales', 'management-
         { page: 'agent-dashboard', label: 'Agent Summary' },
         { page: 'order-placement', label: 'Order Placement' },
         { page: 'total-vendor-list', label: 'Vendor List' },
+        { page: 'expenses', label: 'Add Expenses' },
+        { page: 'sales-monitoring', label: 'Sales Monitoring'},
     ].filter(item => allowedPages.includes(item.page));
 
     menuContainer.innerHTML = `
