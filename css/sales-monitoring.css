@@ -1,75 +1,168 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <title>Sales Monitoring</title>
-    <link rel="stylesheet" href="css/sales-monitoring.css">
-</head>
-<body>
-    <div class="container">
-        <h1>Sales Monitoring</h1>
-        <div class="filters">
-            <select id="payment-filter" onchange="fetchOrders()">
-                <option value="">All Payment Methods</option>
-                <option value="Cash">Cash</option>
-                <option value="Online">Online</option>
-                <option value="Collectibles">Collectibles</option>
-                <option value="Partial">Partial</option>
-                <option value="Paid Partial">Paid Partial</option>
-            </select>
-            <select id="month-filter" onchange="fetchOrders()">
-                <option value="">All Months</option>
-                <option value="1">January</option>
-                <option value="2">February</option>
-                <option value="3">March</option>
-                <option value="4">April</option>
-                <option value="5">May</option>
-                <option value="6">June</option>
-                <option value="7">July</option>
-                <option value="8">August</option>
-                <option value="9">September</option>
-                <option value="10">October</option>
-                <option value="11">November</option>
-                <option value="12">December</option>
-            </select>
-            <select id="year-filter" onchange="fetchOrders()">
-                <option value="">All Years</option>
-            </select>
-            <select id="sort-filter" onchange="fetchOrders()">
-                <option value="desc">Newly Added</option>
-                <option value="asc">Last Added</option>
-            </select>
-        </div>
-        <div id="order-list" class="order-table"></div>
-    </div>
-    <div id="payment-modal" class="modal">
-        <div class="modal-content">
-            <h2>Update Payment</h2>
-            <form id="payment-form">
-                <input type="hidden" id="payment-order-id">
-                <input type="number" id="payment-amount" placeholder="Amount Paid" step="0.01" required>
-                <p id="remaining-balance">Remaining Balance: ₱0.00</p>
-                <select id="payment-method" required>
-                    <option value="Cash">Cash</option>
-                    <option value="Online">Online</option>
-                </select>
-                <button type="submit">Add</button>
-                <button type="button" onclick="closePaymentModal()">Cancel</button>
-            </form>
-        </div>
-    </div>
-    <div id="history-modal" class="modal">
-        <div class="modal-content">
-            <h2>Payment History</h2>
-            <table id="history-table">
-                <thead><tr><th>Date</th><th>Amount</th><th>Method</th></tr></thead>
-                <tbody></tbody>
-            </table>
-            <button onclick="closeHistoryModal()">Close</button>
-        </div>
-    </div>
-    <script defer src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <script defer src="js/common.js"></script>
-    <script defer src="js/sales-monitoring.js"></script>
-</body>
-</html>
+body {
+    font-family: 'Segoe UI', 'Arial', sans-serif; /* Modern, professional font */
+    margin: 0;
+    background-color: #D2B48C; /* Light brown background */
+    line-height: 1.6; /* Improved readability */
+}
+
+.container {
+    max-width: 1500px; /* Reduced from 2500px for better focus */
+    width: 95%; /* Slightly wider for flexibility */
+    margin: 30px auto; /* More top/bottom spacing */
+    background: #F5F5DC; /* Beige container */
+    padding: 25px; /* Increased padding */
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15); /* Softer, deeper shadow */
+    border-radius: 8px; /* Slightly rounded corners */
+}
+
+h1 {
+    color: #D32F2F;
+    font-size: 32px; /* Larger for prominence */
+    margin: 0 0 25px;
+    text-align: center;
+    font-weight: 600; /* Bolder for professionalism */
+}
+
+.order-table {
+    border: 1px solid #D32F2F;
+    border-radius: 8px; /* Rounded for friendliness */
+    overflow: hidden; /* Clean edges */
+}
+
+.order-row {
+    display: flex;
+    padding: 15px; /* More padding for breathing room */
+    border-bottom: 1px solid #D32F2F;
+    flex-wrap: wrap;
+    background: #FFFFFF; /* White rows for contrast */
+    transition: background-color 0.2s; /* Smooth hover effect */
+}
+
+.order-row:hover {
+    background: #FFF5F5; /* Subtle hover effect */
+}
+
+.order-row div {
+    flex: 1 1 120px; /* Slightly wider base width */
+    padding: 8px; /* More padding */
+    min-width: 0;
+    font-size: 14px; /* Readable size */
+}
+
+.order-row button {
+    padding: 6px 12px; /* Slightly larger buttons */
+    background: #D32F2F;
+    color: #FFFFFF;
+    border: none;
+    border-radius: 4px; /* Softer corners */
+    cursor: pointer;
+    font-weight: 500; /* Bolder text */
+    margin-left: 5px; /* Spacing between buttons */
+}
+
+.order-row button:hover {
+    background: #B71C1C;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2); /* Hover shadow */
+}
+
+.modal {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.6); /* Darker overlay for focus */
+}
+
+.modal-content {
+    width: 90%;
+    max-width: 450px; /* Slightly wider for comfort */
+    margin: 120px auto; /* Higher for centering */
+    background: #FFFFFF;
+    padding: 20px; /* More padding */
+    border: 2px solid #D32F2F;
+    border-radius: 8px; /* Rounded corners */
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2); /* Professional shadow */
+}
+
+.modal-content h2 {
+    color: #D32F2F;
+    margin: 0 0 20px;
+    font-size: 24px; /* Larger for clarity */
+    font-weight: 600;
+}
+
+.modal-content form, .modal-content table {
+    margin-bottom: 20px;
+}
+
+.modal-content input, .modal-content select {
+    width: 100%;
+    padding: 10px; /* More padding */
+    margin-bottom: 12px; /* Increased spacing */
+    border: 1px solid #D32F2F;
+    border-radius: 4px;
+    box-sizing: border-box;
+    font-size: 14px; /* Readable */
+    background: #FFF5F5; /* Light red tint */
+}
+
+.modal-content button {
+    padding: 10px 20px; /* Larger buttons */
+    background: #D32F2F;
+    color: #FFFFFF;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-weight: 500;
+    margin-right: 10px; /* Spacing between buttons */
+}
+
+.modal-content button:hover {
+    background: #B71C1C;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+.modal-content table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 14px;
+}
+
+.modal-content th, .modal-content td {
+    padding: 10px; /* More padding */
+    border-bottom: 1px solid #D32F2F;
+    text-align: left;
+}
+
+.filters {
+    display: flex;
+    gap: 20px; /* More spacing */
+    margin-bottom: 30px; /* Increased separation */
+    justify-content: center; /* Centered filters */
+}
+
+.filters select {
+    padding: 10px; /* Larger padding */
+    border: 1px solid #D32F2F;
+    border-radius: 4px;
+    font-size: 14px;
+    background: #FFFFFF;
+    min-width: 150px; /* Consistent width */
+}
+
+.modal-content p {
+    margin: 12px 0;
+    color: #D32F2F;
+    font-size: 14px;
+}
+
+.order-row.cancelled {
+    background-color: #D32F2F;
+    color: #FFFFFF;
+}
+
+.order-row.cancelled button {
+    display: none; /* Hide buttons for cancelled orders */
+}
