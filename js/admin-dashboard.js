@@ -279,7 +279,7 @@ function populateMonthFilter() {
 // Initialize
 checkAuth('admin').then(isAuthenticated => {
     if (isAuthenticated) {
-        renderMenu(['product', 'vendors', 'sales-monitoring', 'delivery-management', 'expenses']);
+        renderMenu(['product', 'total-vendor-list', 'sales-monitoring', 'delivery-management', 'expenses']);
         populateYearFilter();
         populateMonthFilter();
         fetchDashboardData();
