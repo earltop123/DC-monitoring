@@ -15,24 +15,41 @@ async function deductStock(order) {
         const productData = products.find(p => p.id === product.id);
         if (productData) {
             const newStock = productData.stock - product.quantity;
+            if (newStock < 0) {
+                showMessageModal('Error', `Insufficient stock for ${productData.name}. Required: ${product.quantity}, Available: ${productData.stock}`);
+                return false; // Stop processing
+            }
             const { error: stockError } = await supabase
                 .from('products')
                 .update({ stock: newStock })
                 .eq('id', product.id);
-            if (stockError) console.error('Error updating stock for product', product.id, ':', stockError.message);
+            if (stockError) {
+                console.error('Error updating stock for product', product.id, ':', stockError.message);
+                showMessageModal('Error', `Failed to update stock for ${productData.name}: ${stockError.message}`);
+                return false;
+            }
         }
         if (product.chili_sauce && chiliSauceId) {
             const chiliData = products.find(p => p.id === chiliSauceId);
             if (chiliData) {
                 const newChiliStock = chiliData.stock - product.quantity;
+                if (newChiliStock < 0) {
+                    showMessageModal('Error', `Insufficient stock for Chili Sauce. Required: ${product.quantity}, Available: ${chiliData.stock}`);
+                    return false;
+                }
                 const { error: chiliError } = await supabase
                     .from('products')
                     .update({ stock: newChiliStock })
                     .eq('id', chiliSauceId);
-                if (chiliError) console.error('Error updating chili stock:', chiliError.message);
+                if (chiliError) {
+                    console.error('Error updating chili stock:', chiliError.message);
+                    showMessageModal('Error', `Failed to update Chili Sauce stock: ${chiliError.message}`);
+                    return false;
+                }
             }
         }
     }
+    return true; // Success
 }
 
 async function fetchOrders(statusFilter = 'pending', distributorFilter = '', sortOrder = 'desc') {
@@ -67,52 +84,117 @@ async function populateDistributorFilter() {
         sortedDistributors.map(dist => `<option value="${dist.id}">${dist.name}</option>`).join('');
 }
 
-function renderOrders(orders) {
+function renderOrders(orders, updateSingleOrderId = null) {
     const orderList = document.getElementById('order-list');
-    orderList.innerHTML = '';
-    orders.forEach(order => {
-        const productsList = order.products.map(p => {
-            const baseName = p.name === 'Chili Sauce (100grams)' ? 'Extra Chili Sauce (100 Grams)' : p.name;
-            const displayName = p.chili_sauce ? `${baseName} with Chili Sauce` : baseName;
-            const chiliSaucePrice = order.products.some(prod => prod.name === 'Chili Sauce (100grams)') 
-                ? order.products.find(prod => prod.name === 'Chili Sauce (100grams)').price 
-                : 0;
-            const unitPrice = p.chili_sauce && p.name !== 'Chili Sauce (100grams)' 
-                ? p.price + chiliSaucePrice 
-                : p.price;
-            const totalPrice = unitPrice * p.quantity;
-            const unit = p.quantity === 1 ? 'pack' : 'packs';
-            return `- ${displayName} (₱ ${unitPrice.toFixed(2)} x ${p.quantity} ${unit}) = ₱ ${totalPrice.toFixed(2)}`;
-        }).join('\n'); // Newline for bulleted list
+    
+    if (!updateSingleOrderId) {
+        // Initial render or full refresh
+        orderList.innerHTML = '';
+        orders.forEach(order => renderSingleOrder(order, orderList));
+    } else {
+        // Update only the specific order
+        const existingOrderBox = document.getElementById(`order-box-${updateSingleOrderId}`);
+        const updatedOrder = orders.find(o => o.id === updateSingleOrderId);
+        if (existingOrderBox && updatedOrder) {
+            if (updatedOrder.status !== currentFilter) {
+                // Remove if it no longer matches the filter
+                existingOrderBox.remove();
+            } else {
+                // Replace the existing order box
+                const newOrderBox = renderSingleOrder(updatedOrder);
+                existingOrderBox.replaceWith(newOrderBox);
+            }
+        }
+    }
+}
+function renderSingleOrder(order, orderList = null) {
+    const productsList = order.products.map(p => {
+        const baseName = p.name === 'Chili Sauce (100grams)' ? 'Extra Chili Sauce (100 Grams)' : p.name;
+        const displayName = p.chili_sauce ? `${baseName} with Chili Sauce` : baseName;
+        const chiliSaucePrice = order.products.some(prod => prod.name === 'Chili Sauce (100grams)') 
+            ? order.products.find(prod => prod.name === 'Chili Sauce (100grams)').price 
+            : 0;
+        const unitPrice = p.chili_sauce && p.name !== 'Chili Sauce (100grams)' 
+            ? p.price + chiliSaucePrice 
+            : p.price;
+        const totalPrice = unitPrice * p.quantity;
+        const unit = p.quantity === 1 ? 'pack' : 'packs';
+        return `- ${displayName} (₱ ${unitPrice.toFixed(2)} x ${p.quantity} ${unit}) = ₱ ${totalPrice.toFixed(2)}`;
+    }).join('\n');
 
-        const lastUpdated = order.payment_updated_at ? new Date(order.payment_updated_at) : new Date(order.order_date);
-        const lastUpdatedStr = lastUpdated.toLocaleString('en-US', { timeZone: 'Asia/Manila', month: 'short', day: 'numeric', year: 'numeric', hour: 'numeric', minute: 'numeric', hour12: true });
+    const vendorName = order.vendors?.name || 'Vendor Deleted';
+    const contactNumber = order.vendors?.contact_number || 'N/A';
+    const contactLink = contactNumber !== 'N/A' 
+        ? `<a href="tel:${contactNumber}" class="contact-link">${contactNumber}</a>` 
+        : contactNumber;
 
-        const vendorName = order.vendors?.name || 'Vendor Deleted';
-        const contactNumber = order.vendors?.contact_number || 'N/A';
-        const contactLink = contactNumber !== 'N/A' 
-            ? `<a href="tel:${contactNumber}" class="contact-link">${contactNumber}</a>` 
-            : contactNumber;
-
-        const orderBox = document.createElement('div');
-        orderBox.className = 'order-box';
-        orderBox.innerHTML = `
-            <div class="order-header" onclick="toggleOrderDetails(${order.id})">
-                <h3>Vendor: ${vendorName} || Number: ${contactLink}</h3>
-                <span class="status ${order.status}">${order.status}</span>
-                <span class="toggle-icon" id="toggle-icon-${order.id}">${expandedStates[order.id] ? '-' : '+'}</span>
-            </div>
-            <div class="order-details" id="order-details-${order.id}" style="display: ${expandedStates[order.id] ? 'block' : 'none'}">
-                <br><br>
-                <p><strong>Items:</strong><br>${productsList}</p>
-                <p><strong>Agent Name:</strong> ${order.sales_agents?.name || 'N/A'}</p>
-                <p><strong>Distributor:</strong> ${order.distributors?.name || 'N/A'}</p>
-                <p><strong>Total:</strong> ₱${order.total_amount.toFixed(2)}</p>
-                <!-- ... rest of the HTML ... -->
-            </div>
-        `;
-        orderList.appendChild(orderBox);
+    // Format timestamp in Manila timezone
+    const orderDate = new Date(order.order_date);
+    const timestamp = orderDate.toLocaleString('en-US', {
+        timeZone: 'Asia/Manila',
+        month: 'short',
+        day: 'numeric',
+        year: 'numeric',
+        hour: 'numeric',
+        minute: 'numeric',
+        hour12: true
     });
+
+    const orderBox = document.createElement('div');
+    orderBox.id = `order-box-${order.id}`;
+    orderBox.className = 'order-box';
+    orderBox.innerHTML = `
+        <div class="order-header" onclick="toggleOrderDetails(${order.id})">
+            <h3>Vendor: ${vendorName} || Number: ${contactLink}</h3>
+            <span class="status ${order.status}">${order.status}</span>
+            <span class="toggle-icon" id="toggle-icon-${order.id}">${expandedStates[order.id] ? '-' : '+'}</span>
+        </div>
+        <div class="order-details" id="order-details-${order.id}" style="display: ${expandedStates[order.id] ? 'block' : 'none'}">
+            <br><br>
+            <p><strong>Created:</strong> ${timestamp}</p>
+            <p><strong>Items:</strong><br>${productsList}</p>
+            <p><strong>Agent Name:</strong> ${order.sales_agents?.name || 'N/A'}</p>
+            <p><strong>Distributor:</strong> ${order.distributors?.name || 'N/A'}</p>
+            <p><strong>Total:</strong> ₱${order.total_amount.toFixed(2)}</p>
+            <p><strong>Payment Method:</strong></p>
+            <select id="payment-method-${order.id}" onchange="handlePaymentMethod(${order.id}, this.value)" ${order.status !== 'pending' ? 'disabled' : ''}>
+                <option value="">Select Payment Method</option>
+                <option value="Cash">Cash</option>
+                <option value="Online">Online</option>
+                <option value="Collectibles">Collectibles</option>
+                <option value="Partial">Partial</option>
+            </select>
+            <div class="actions">
+                <button class="cancel-btn" onclick="showCancelConfirmation(${order.id})" ${order.status !== 'pending' ? 'disabled' : ''}>Cancel</button>
+            </div>
+        </div>
+    `;
+    
+    if (orderList) orderList.appendChild(orderBox);
+    return orderBox;
+}
+function showCancelConfirmation(orderId) {
+    const modal = document.getElementById('partial-payment-modal'); // Reuse existing modal
+    modal.innerHTML = `
+        <div class="modal-content">
+            <h2>Confirm Cancellation</h2>
+            <p>Are you sure you want to cancel this order?</p>
+            <div class="review-buttons">
+                <button onclick="updateOrderStatus(${orderId}, 'cancelled')">Yes</button>
+                <button onclick="closeModal()">No</button>
+            </div>
+        </div>
+    `;
+    modal.style.display = 'flex';
+}
+async function handlePaymentMethod(orderId, method) {
+    if (!method) return;
+
+    if (method === 'Cash' || method === 'Online' || method === 'Collectibles') {
+        await updateOrderStatus(orderId, 'delivered', method);
+    } else if (method === 'Partial') {
+        showPartialPaymentModal(orderId);
+    }
 }
 function toggleOrderDetails(orderId) {
     const details = document.getElementById(`order-details-${orderId}`);
@@ -191,13 +273,7 @@ async function showPaymentModal(orderId) {
     modal.style.display = 'flex';
 }
 
-async function updateOrderStatus(orderId, newStatus) {
-    const paymentMethod = document.getElementById(`payment-method-${orderId}`).value;
-    if (!paymentMethod && newStatus === 'delivered') {
-        showMessageModal('Error', 'Please select a payment method before marking as delivered.');
-        return;
-    }
-
+async function updateOrderStatus(orderId, newStatus, paymentMethod = null) {
     document.getElementById('loading-modal').style.display = 'flex';
 
     const { data: oldData, error: fetchError } = await supabase
@@ -214,31 +290,33 @@ async function updateOrderStatus(orderId, newStatus) {
 
     let amountPaid = 0;
     let amountDue = 0;
-    let finalPaymentMethod = paymentMethod || oldData.payment_method;
-
-    if (newStatus === 'delivered' || newStatus === 'cancelled') {
+    if (newStatus === 'delivered') {
         if (paymentMethod === 'Cash' || paymentMethod === 'Online') {
             amountPaid = oldData.total_amount;
             amountDue = 0;
         } else if (paymentMethod === 'Collectibles') {
             amountPaid = 0;
             amountDue = oldData.total_amount;
-        } else if (paymentMethod === 'Partial') {
-            amountPaid = oldData.amount_paid || 0;
-            amountDue = oldData.amount_due || oldData.total_amount;
+        }
+        const stockSuccess = await deductStock(oldData);
+        if (!stockSuccess) {
+            document.getElementById('loading-modal').style.display = 'none';
+            return;
         }
     }
 
-    const { error } = await supabase
+    const { data: updatedOrder, error } = await supabase
         .from('orders')
         .update({
             status: newStatus,
-            payment_method: finalPaymentMethod,
+            payment_method: paymentMethod || oldData.payment_method,
             amount_paid: amountPaid,
             amount_due: amountDue,
-            payment_updated_at: (newStatus === 'delivered' || newStatus === 'cancelled') ? new Date().toISOString() : null
+            payment_updated_at: newStatus === 'delivered' || newStatus === 'cancelled' ? new Date().toISOString() : null
         })
-        .eq('id', orderId);
+        .eq('id', orderId)
+        .select('*, vendors(name, contact_number), sales_agents(name), distributors(name)')
+        .single();
 
     if (error) {
         document.getElementById('loading-modal').style.display = 'none';
@@ -246,52 +324,76 @@ async function updateOrderStatus(orderId, newStatus) {
         return;
     }
 
-    if (newStatus === 'delivered') await deductStock(oldData);
-
-    const { error: historyError } = await supabase
-        .from('history')
-        .insert({
-            entity_type: 'order',
-            entity_id: orderId,
-            change_type: 'edit',
-            details: { old: oldData, new: { status: newStatus, payment_method: finalPaymentMethod, amount_paid: amountPaid, amount_due: amountDue } }
-        });
-    if (historyError) console.error('Error inserting history in updateOrderStatus:', historyError.message);
-
     document.getElementById('loading-modal').style.display = 'none';
-    showToast('Order updated successfully!');
-    closePaymentModal();
-    updateFilters();
-    fetchOrders(currentFilter, cityFilter, sortOrder);
+    showToast(`Order ${newStatus === 'cancelled' ? 'cancelled' : 'delivered'} successfully!`);
+    closeModal();
+
+    // Update only the changed order
+    renderOrders([updatedOrder], orderId);
 }
 
+async function showPartialPaymentModal(orderId) {
+    const { data: order, error } = await supabase
+        .from('orders')
+        .select('*')
+        .eq('id', orderId)
+        .eq('status', 'pending') // Only pending
+        .single();
+
+    if (error || !order) return;
+
+    const modal = document.getElementById('partial-payment-modal');
+    modal.innerHTML = `
+        <div class="modal-content">
+            <h2>Partial Payment</h2>
+            <label for="partial-amount">Amount:</label>
+            <input type="number" id="partial-amount" min="0" step="0.01" data-total="${order.total_amount}" required>
+            <label for="partial-method">Method:</label>
+            <select id="partial-method" required>
+                <option value="Cash">Cash</option>
+                <option value="Online">Online</option>
+            </select>
+            <div class="review-buttons">
+                <button onclick="submitPartialPayment(${orderId})">Confirm</button>
+                <button onclick="closeModal()">Close</button>
+            </div>
+        </div>
+    `;
+    modal.style.display = 'flex';
+}
 async function submitPartialPayment(orderId) {
-    const amountPaid = parseFloat(document.getElementById('partial-amount-paid').value) || 0;
-    const totalAmount = parseFloat(document.getElementById('partial-amount-paid').dataset.totalAmount) || 0;
-    const paymentMethod = document.getElementById('partial-payment-method').value;
+    const amountPaid = parseFloat(document.getElementById('partial-amount').value) || 0;
+    const totalAmount = parseFloat(document.getElementById('partial-amount').dataset.total) || 0;
+    const paymentMethod = document.getElementById('partial-method').value;
 
     if (amountPaid >= totalAmount) {
-        showMessageModal('Error', 'Amount paid cannot be greater than or equal to total amount for partial payment');
+        showMessageModal('Error', 'Amount paid cannot be greater than or equal to total amount');
         return;
     }
 
     document.getElementById('loading-modal').style.display = 'flex';
 
-    const { data: oldData, error: fetchError } = await supabase
+    const { data: oldData, error } = await supabase
         .from('orders')
         .select('*')
         .eq('id', orderId)
         .single();
 
-    if (fetchError) {
+    if (error) {
         document.getElementById('loading-modal').style.display = 'none';
-        showMessageModal('Error', 'Error fetching order: ' + fetchError.message);
+        showMessageModal('Error', 'Error fetching order: ' + error.message);
+        return;
+    }
+
+    const stockSuccess = await deductStock(oldData);
+    if (!stockSuccess) {
+        document.getElementById('loading-modal').style.display = 'none';
         return;
     }
 
     const amountDue = totalAmount - amountPaid;
 
-    const { error } = await supabase
+    const { data: updatedOrder, error: updateError } = await supabase
         .from('orders')
         .update({
             status: 'delivered',
@@ -300,41 +402,22 @@ async function submitPartialPayment(orderId) {
             amount_due: amountDue,
             payment_updated_at: new Date().toISOString()
         })
-        .eq('id', orderId);
+        .eq('id', orderId)
+        .select('*, vendors(name, contact_number), sales_agents(name), distributors(name)')
+        .single();
 
-    if (error) {
+    if (updateError) {
         document.getElementById('loading-modal').style.display = 'none';
-        showMessageModal('Error', 'Error updating order: ' + error.message);
+        showMessageModal('Error', 'Error updating order: ' + updateError.message);
         return;
     }
 
-    await deductStock(oldData);
-
-    const { error: historyError } = await supabase
-        .from('history')
-        .insert({
-            entity_type: 'order',
-            entity_id: orderId,
-            change_type: 'edit',
-            details: { 
-                old: oldData, 
-                new: { 
-                    status: 'delivered', 
-                    payment_method: 'Partial', 
-                    amount_paid: amountPaid, 
-                    amount_due: amountDue 
-                },
-                payment_amount: amountPaid,
-                payment_method: paymentMethod
-            }
-        });
-    if (historyError) console.error('Error inserting history in submitPartialPayment:', historyError.message);
-
     document.getElementById('loading-modal').style.display = 'none';
-    showToast('Order marked as delivered with partial payment!');
-    closePaymentModal();
-    updateFilters();
-    fetchOrders(currentFilter, cityFilter, sortOrder);
+    showToast('Order delivered with partial payment!');
+    closeModal();
+
+    // Update only the changed order
+    renderOrders([updatedOrder], orderId);
 }
 
 function closePaymentModal() {
@@ -348,9 +431,32 @@ function updateFilters() {
     distributorFilter = document.getElementById('distributor-filter').value;
     sortOrder = document.getElementById('sort-order')?.value || 'desc';
 }
+function closeModal() {
+    const modal = document.getElementById('partial-payment-modal');
+    modal.style.display = 'none';
+}
+
+// Prevent closing on outside click
+document.getElementById('partial-payment-modal').addEventListener('click', (e) => {
+    if (e.target === e.currentTarget) e.stopPropagation(); // Do nothing on outside click
+});
+
 // Initialize
-// Initialize
-checkAuth('admin').then(isAuthenticated => {
+updateFilters();
+        fetchOrders('pending', distributorFilter, sortOrder); // Changed cityFilter to distributorFilter
+        populateDistributorFilter();
+        fetchProducts();
+
+        const channel = supabase
+            .channel('orders-channel')
+            .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'orders' }, (payload) => {
+                updateFilters();
+                fetchOrders(currentFilter, distributorFilter, sortOrder); // Changed cityFilter to distributorFilter
+            })
+            .subscribe();
+    
+
+/*checkAuth('admin').then(isAuthenticated => {
     if (isAuthenticated) {
         updateFilters();
         fetchOrders('pending', distributorFilter, sortOrder); // Changed cityFilter to distributorFilter
@@ -365,4 +471,4 @@ checkAuth('admin').then(isAuthenticated => {
             })
             .subscribe();
     }
-});
+});*/
