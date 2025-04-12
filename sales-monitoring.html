@@ -9,39 +9,39 @@
     <div class="container">
         <h1>Sales Monitoring</h1>
         <div class="filters">
-            <select id="payment-filter" onchange="fetchOrders()">
-                <option value="">All Payment Methods</option>
-                <option value="Cash">Cash</option>
-                <option value="Online">Online</option>
-                <option value="Collectibles">Collectibles</option>
-                <option value="Partial">Partial</option>
-                <option value="Paid Partial">Paid Partial</option>
-            </select>
-            <select id="month-filter" onchange="fetchOrders()">
-                <option value="">All Months</option>
-                <option value="1">January</option>
-                <option value="2">February</option>
-                <option value="3">March</option>
-                <option value="4">April</option>
-                <option value="5">May</option>
-                <option value="6">June</option>
-                <option value="7">July</option>
-                <option value="8">August</option>
-                <option value="9">September</option>
-                <option value="10">October</option>
-                <option value="11">November</option>
-                <option value="12">December</option>
-            </select>
-            <select id="year-filter" onchange="fetchOrders()">
-                <option value="">All Years</option>
-            </select>
-            <select id="sort-filter" onchange="fetchOrders()">
-                <option value="desc">Newly Added</option>
-                <option value="asc">Last Added</option>
-            </select>
-        </div>
-        <div id="filter-total" class="filter-total"></div>
-        <div id="order-list" class="order-table"></div>
+    <select id="payment-filter" onchange="fetchOrders()">
+        <option value="">All Payment Methods</option>
+        <option value="Cash">Cash</option>
+        <option value="Online">Online</option>
+        <option value="Collectibles">Collectibles</option>
+        <option value="Partial">Partial</option>
+        <option value="Paid Partial">Paid Partial</option>
+    </select>
+    <select id="month-filter" onchange="fetchOrders()">
+        <option value="">All Months</option>
+        <option value="1">January</option>
+        <option value="2">February</option>
+        <option value="3">March</option>
+        <option value="4">April</option>
+        <option value="5">May</option>
+        <option value="6">June</option>
+        <option value="7">July</option>
+        <option value="8">August</option>
+        <option value="9">September</option>
+        <option value="10">October</option>
+        <option value="11">November</option>
+        <option value="12">December</option>
+    </select>
+    <select id="year-filter" onchange="fetchOrders()">
+        <option value="">All Years</option>
+    </select>
+    <select id="sort-filter" onchange="fetchOrders()">
+        <option value="desc">Newly Added</option>
+        <option value="asc">Last Added</option>
+    </select>
+</div>
+<div id="filter-total" class="filter-total"></div>
+<div id="order-list" class="order-table"></div>
     <div id="payment-modal" class="modal">
         <div class="modal-content">
             <h2>Update Payment</h2>
