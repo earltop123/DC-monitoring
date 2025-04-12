@@ -3,18 +3,19 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Investors List</title>
+  <title>Investor Detail</title>
   <link rel="stylesheet" href="styles.css">
 </head>
 <body>
-  <h1>Investors</h1>
-  <table id="investors-table">
+  <h1 id="investor-name"></h1>
+
+  <h2>Vendors</h2>
+  <table id="vendors-table">
     <thead>
       <tr>
         <th>Name</th>
-        <th>Vendors</th>
         <th>Packs Sold</th>
-        <th>Total Cut</th>
+        <th>Action</th>
       </tr>
     </thead>
     <tbody>
@@ -22,34 +23,128 @@
     </tbody>
   </table>
 
+  <h2>Add New Vendor</h2>
+  <form id="add-vendor-form">
+    <input type="text" id="vendor-name" placeholder="Name" required>
+    <input type="number" id="vendor-packs" placeholder="Packs Sold" required>
+    <button type="submit">Add</button>
+  </form>
+
+  <h2>Assign Existing Vendors</h2>
+  <ul id="unassigned-vendors">
+    <!-- List items will be added here -->
+  </ul>
+
+  <button id="view-report">View Report</button>
+
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
   <script>
     const supabase = Supabase.createClient('your-supabase-url', 'your-supabase-key');
+    const urlParams = new URLSearchParams(window.location.search);
+    const investorId = urlParams.get('id');
 
-    async function fetchInvestors() {
-      const { data, error } = await supabase.from('investor_summary').select('*');
-      if (error) {
-        console.error('Error fetching investors:', error);
+    async function fetchInvestorData() {
+      const { data: investor, error: investorError } = await supabase
+        .from('investors')
+        .select('name')
+        .eq('id', investorId)
+        .single();
+      if (investorError) {
+        console.error('Error fetching investor:', investorError);
         return;
       }
-      const tbody = document.querySelector('#investors-table tbody');
-      data.forEach(investor => {
+      document.getElementById('investor-name').textContent = investor.name;
+
+      const { data: vendors, error: vendorsError } = await supabase
+        .from('vendors')
+        .select('id, name, packs_sold')
+        .eq('investor_id', investorId);
+      if (vendorsError) {
+        console.error('Error fetching vendors:', vendorsError);
+        return;
+      }
+      const tbody = document.querySelector('#vendors-table tbody');
+      tbody.innerHTML = '';
+      vendors.forEach(vendor => {
         const row = document.createElement('tr');
-        const nameCell = document.createElement('td');
-        const link = document.createElement('a');
-        link.href = `investor-detail.html?id=${investor.id}`;
-        link.textContent = investor.name;
-        nameCell.appendChild(link);
-        row.appendChild(nameCell);
-        row.appendChild(document.createElement('td')).textContent = investor.number_of_vendors;
-        row.appendChild(document.createElement('td')).textContent = investor.total_packs_sold;
-        const totalCut = (investor.total_packs_sold * 13.50).toFixed(2);
-        row.appendChild(document.createElement('td')).textContent = `$${totalCut}`;
+        row.innerHTML = `
+          <td>${vendor.name}</td>
+          <td><input type="number" value="${vendor.packs_sold}" data-id="${vendor.id}"></td>
+          <td><button data-id="${vendor.id}">Save</button></td>
+        `;
         tbody.appendChild(row);
+      });
+
+      tbody.addEventListener('click', async (e) => {
+        if (e.target.tagName === 'BUTTON') {
+          const vendorId = e.target.dataset.id;
+          const input = e.target.parentElement.previousElementSibling.querySelector('input');
+          const packs = parseInt(input.value);
+          const { error } = await supabase
+            .from('vendors')
+            .update({ packs_sold: packs })
+            .eq('id', vendorId);
+          if (error) console.error('Error updating packs sold:', error);
+        }
       });
     }
 
-    fetchInvestors();
+    async function fetchUnassignedVendors() {
+      const { data, error } = await supabase
+        .from('vendors')
+        .select('id, name')
+        .is('investor_id', null);
+      if (error) {
+        console.error('Error fetching unassigned vendors:', error);
+        return;
+      }
+      const ul = document.getElementById('unassigned-vendors');
+      ul.innerHTML = '';
+      data.forEach(vendor => {
+        const li = document.createElement('li');
+        li.innerHTML = `${vendor.name} <button data-id="${vendor.id}">Assign</button>`;
+        ul.appendChild(li);
+      });
+
+      ul.addEventListener('click', async (e) => {
+        if (e.target.tagName === 'BUTTON') {
+          const vendorId = e.target.dataset.id;
+          const { error } = await supabase
+            .from('vendors')
+            .update({ investor_id: investorId })
+            .eq('id', vendorId);
+          if (error) {
+            console.error('Error assigning vendor:', error);
+          } else {
+            e.target.parentElement.remove();
+            fetchInvestorData();
+          }
+        }
+      });
+    }
+
+    document.getElementById('add-vendor-form').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const name = document.getElementById('vendor-name').value;
+      const packs = parseInt(document.getElementById('vendor-packs').value);
+      const { error } = await supabase
+        .from('vendors')
+        .insert({ name, packs_sold: packs, investor_id: investorId });
+      if (error) {
+        console.error('Error adding vendor:', error);
+      } else {
+        document.getElementById('vendor-name').value = '';
+        document.getElementById('vendor-packs').value = '';
+        fetchInvestorData();
+      }
+    });
+
+    document.getElementById('view-report').addEventListener('click', () => {
+      window.open(`investor-report.html?id=${investorId}`, '_blank');
+    });
+
+    fetchInvestorData();
+    fetchUnassignedVendors();
   </script>
 </body>
 </html>
