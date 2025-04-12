@@ -26,20 +26,23 @@
     <input type="text" id="investor-name" placeholder="Investor Name" required>
     <button type="submit">Add Investor</button>
   </form>
-  document.getElementById('add-investor-form').addEventListener('submit', async (e) => {
-    e.preventDefault();
-    const name = document.getElementById('investor-name').value;
-    if (!name) return; // Prevent empty submissions
-    const { error } = await supabase.from('investors').insert({ name });
-    if (error) {
-      console.error('Error adding investor:', error);
-      alert('Failed to add investor');
-    } else {
-      document.getElementById('investor-name').value = ''; // Clear the input
-      fetchInvestors(); // Refresh the list
-    }
-  });
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
+  
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js">
+    document.getElementById('add-investor-form').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const name = document.getElementById('investor-name').value;
+  if (!name) return; // Prevent empty submissions
+  const { error } = await supabase.from('investors').insert({ name });
+  if (error) {
+    console.error('Error adding investor:', error);
+    alert('Failed to add investor');
+  } else {
+    document.getElementById('investor-name').value = ''; // Clear the input
+    fetchInvestors(); // Refresh the list
+  }
+});
+  </script>
+  
   <script>
     const supabase = Supabase.createClient('your-supabase-url', 'your-supabase-key');
 
