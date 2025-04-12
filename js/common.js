@@ -46,16 +46,17 @@ function navigateTo(page) {
     window.open(page, '_blank');
 }
 
-function showToast(message, callback, duration = 2000) {
+function showToast(message, duration = 2000) {
     const toastContainer = document.getElementById('toast-container');
+    if (!toastContainer) {
+        console.warn('Toast container not found');
+        return;
+    }
     const toast = document.createElement('div');
     toast.className = 'toast';
     toast.textContent = message;
     toastContainer.appendChild(toast);
-    setTimeout(() => {
-        toast.remove();
-        if (callback) callback();
-    }, duration);
+    setTimeout(() => toast.remove(), duration);
 }
 
 // In common.js
