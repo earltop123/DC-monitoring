@@ -75,3 +75,22 @@ body {
     margin: 5px;
     border-radius: 3px;
   }
+  .vendor-table {
+    width: 100%;
+    margin-top: 10px;
+    border-collapse: collapse;
+  }
+  
+  .vendor-table th, .vendor-table td {
+    border: 1px solid #ddd;
+    padding: 6px;
+  }
+  
+  .vendor-table th {
+    background-color: #e8e8e8;
+  }
+  
+  .assign-vendor {
+    margin: 5px;
+    padding: 5px;
+  }
