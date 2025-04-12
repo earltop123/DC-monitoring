@@ -94,3 +94,34 @@ body {
     margin: 5px;
     padding: 5px;
   }
+  .report-content {
+    width: 500px;
+    max-width: 90%;
+  }
+  
+  #report-table {
+    margin-bottom: 20px;
+  }
+  
+  @media print {
+    body * {
+      visibility: hidden;
+    }
+    #report-modal, #report-modal * {
+      visibility: visible;
+    }
+    #report-modal {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      background: white;
+    }
+    .modal {
+      display: block;
+      background: none;
+    }
+    #report-print, #report-close {
+      display: none;
+    }
+  }
