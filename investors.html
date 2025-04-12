@@ -11,14 +11,31 @@
     <h1>Investors</h1>
     <button id="add-investor-btn">Add Investor</button>
     <table id="investors-table">
-      <thead>
-        <tr>
-          <th>Name</th>
-          <th>Contact</th>
-        </tr>
-      </thead>
-      <tbody></tbody>
-    </table>
+        <thead>
+          <tr>
+            <th>Name</th>
+            <th>Contact</th>
+            <th>Vendors</th>
+          </tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+      
+      <!-- Modal for adding vendor -->
+      <div id="add-vendor-modal" class="modal" style="display: none;">
+        <div class="modal-content">
+          <h3>Add Vendor</h3>
+          <form id="add-vendor-form">
+            <label for="vendor-name">Name:</label>
+            <input type="text" id="vendor-name" required>
+            <label for="vendor-packs">Packs Sold:</label>
+            <input type="number" id="vendor-packs" value="0" min="0">
+            <input type="hidden" id="vendor-investor-id">
+            <button type="submit">Add</button>
+            <button type="button" id="vendor-modal-close">Close</button>
+          </form>
+        </div>
+      </div>
   
     <!-- Modal for adding investor -->
     <div id="add-investor-modal" class="modal" style="display: none;">
