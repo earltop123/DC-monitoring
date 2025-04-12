@@ -6,7 +6,7 @@ async function fetchOrders() {
 
     let query = supabase
         .from('orders')
-        .select('*, vendors(name), cities_2(name)')
+        .select('*, vendors(name)')
         .in('status', ['delivered', 'cancelled'])
         .order('order_date', { ascending: sortFilter === 'asc' }); // Sort by order_date
 
@@ -49,7 +49,6 @@ function renderOrders(orders) {
             <div class="order-row ${rowClass}">
                 <div>Date: ${dateStr}</div>
                 <div>Vendor: ${order.vendors?.name || 'N/A'}</div>
-                <div>City: ${order.cities_2?.name || 'N/A'}</div>
                 <div>Total: ₱${order.total_amount.toFixed(2)}</div>
                 <div>Paid: ₱${(order.amount_paid || 0).toFixed(2)}</div>
                 <div>Due: ₱${(order.amount_due || 0).toFixed(2)}</div>
