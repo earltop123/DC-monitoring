@@ -3,73 +3,39 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Investors List</title>
+  <title>Investors</title>
   <link rel="stylesheet" href="investors.css">
 </head>
 <body>
+  <div id="toast-container"></div>
   <h1>Investors</h1>
+  <button id="add-investor-btn">Add Investor</button>
   <table id="investors-table">
     <thead>
       <tr>
         <th>Name</th>
-        <th>Vendors</th>
-        <th>Packs Sold</th>
-        <th>Total Cut</th>
+        <th>Contact</th>
       </tr>
     </thead>
-    <tbody>
-      <!-- Rows will be added here -->
-    </tbody>
+    <tbody></tbody>
   </table>
-  <h2>Add New Investor</h2>
-  <form id="add-investor-form">
-    <input type="text" id="investor-name" placeholder="Investor Name" required>
-    <button type="submit">Add Investor</button>
-  </form>
-  
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js">
-    document.getElementById('add-investor-form').addEventListener('submit', async (e) => {
-  e.preventDefault();
-  const name = document.getElementById('investor-name').value;
-  if (!name) return; // Prevent empty submissions
-  const { error } = await supabase.from('investors').insert({ name });
-  if (error) {
-    console.error('Error adding investor:', error);
-    alert('Failed to add investor');
-  } else {
-    document.getElementById('investor-name').value = ''; // Clear the input
-    fetchInvestors(); // Refresh the list
-  }
-});
-  </script>
-  
-  <script>
-    const supabase = Supabase.createClient('your-supabase-url', 'your-supabase-key');
 
-    async function fetchInvestors() {
-      const { data, error } = await supabase.from('investor_summary').select('*');
-      if (error) {
-        console.error('Error fetching investors:', error);
-        return;
-      }
-      const tbody = document.querySelector('#investors-table tbody');
-      data.forEach(investor => {
-        const row = document.createElement('tr');
-        const nameCell = document.createElement('td');
-        const link = document.createElement('a');
-        link.href = `investor-detail.html?id=${investor.id}`;
-        link.textContent = investor.name;
-        nameCell.appendChild(link);
-        row.appendChild(nameCell);
-        row.appendChild(document.createElement('td')).textContent = investor.number_of_vendors;
-        row.appendChild(document.createElement('td')).textContent = investor.total_packs_sold;
-        const totalCut = (investor.total_packs_sold * 13.50).toFixed(2);
-        row.appendChild(document.createElement('td')).textContent = `$${totalCut}`;
-        tbody.appendChild(row);
-      });
-    }
+  <!-- Modal for adding investor -->
+  <div id="add-investor-modal" class="modal" style="display: none;">
+    <div class="modal-content">
+      <h3>Add Investor</h3>
+      <form id="add-investor-form">
+        <label for="investor-name">Name:</label>
+        <input type="text" id="investor-name" required>
+        <label for="investor-contact">Contact:</label>
+        <input type="text" id="investor-contact">
+        <button type="submit">Add</button>
+        <button type="button" id="modal-close">Close</button>
+      </form>
+    </div>
+  </div>
 
-    fetchInvestors();
-  </script>
+  <script src="common.js"></script>
+  <script src="investors.js"></script>
 </body>
 </html>
