@@ -88,7 +88,28 @@ document.addEventListener('DOMContentLoaded', async () => {
   });
   
   // Report modal handlers
+// Handle clicks and assignments
 document.getElementById('investors-table').addEventListener('click', async (e) => {
+    if (e.target.classList.contains('add-vendor-btn')) {
+      const investorId = e.target.dataset.investorId;
+      // Check vendor count
+      const { count } = await supabase
+        .from('vendors')
+        .select('id', { count: 'exact' })
+        .eq('investor_id', investorId);
+      if (count >= 80) {
+        showToast('Cannot add more than 80 vendors per investor');
+        return;
+      }
+      document.getElementById('vendor-investor-id').value = investorId;
+      document.getElementById('add-vendor-modal').style.display = 'flex';
+    }
+    if (e.target.classList.contains('save-packs')) {
+      const vendorId = e.target.dataset.vendorId;
+      const input = e.target.parentElement.previousElementSibling.querySelector('input');
+      const packs = parseInt(input.value) || 0;
+      updatePacksSold(vendorId, packs);
+    }
     if (e.target.classList.contains('view-report-btn')) {
       const investorId = e.target.dataset.investorId;
       const investorName = e.target.dataset.investorName;
@@ -119,48 +140,34 @@ document.getElementById('investors-table').addEventListener('click', async (e) =
     }
   });
   
-  document.getElementById('report-print').addEventListener('click', () => {
-    window.print();
-  });
-  
-  document.getElementById('report-close').addEventListener('click', () => {
-    document.getElementById('report-modal').style.display = 'none';
-  });
-  
-  document.getElementById('add-vendor-form').addEventListener('submit', async (e) => {
-    e.preventDefault();
-    const name = document.getElementById('vendor-name').value;
-    const packs = parseInt(document.getElementById('vendor-packs').value) || 0;
-    const investorId = document.getElementById('vendor-investor-id').value;
-    const { error } = await supabase
-      .from('vendors')
-      .insert({ name, packs_sold: packs, investor_id: investorId });
-    if (error) {
-      showToast('Error adding vendor: ' + error.message);
-    } else {
-      showToast('Vendor added successfully!');
-      document.getElementById('add-vendor-form').reset();
-      document.getElementById('add-vendor-modal').style.display = 'none';
-      fetchInvestors();
+  document.getElementById('investors-table').addEventListener('change', async (e) => {
+    if (e.target.classList.contains('assign-vendor')) {
+      const vendorId = e.target.value;
+      const investorId = e.target.dataset.investorId;
+      if (vendorId) {
+        // Check vendor count
+        const { count } = await supabase
+          .from('vendors')
+          .select('id', { count: 'exact' })
+          .eq('investor_id', investorId);
+        if (count >= 80) {
+          showToast('Cannot assign more than 80 vendors per investor');
+          e.target.value = '';
+          return;
+        }
+        const { error } = await supabase
+          .from('vendors')
+          .update({ investor_id: investorId })
+          .eq('id', vendorId);
+        if (error) {
+          showToast('Error assigning vendor: ' + error.message);
+        } else {
+          showToast('Vendor assigned successfully!');
+          fetchInvestors(document.getElementById('investor-filter').value);
+        }
+      }
     }
   });
-  
-  document.getElementById('vendor-modal-close').addEventListener('click', () => {
-    document.getElementById('add-vendor-modal').style.display = 'none';
-  });
-  
-  async function updatePacksSold(vendorId, packs) {
-    const { error } = await supabase
-      .from('vendors')
-      .update({ packs_sold: packs })
-      .eq('id', vendorId);
-    if (error) {
-      showToast('Error updating packs sold: ' + error.message);
-    } else {
-      showToast('Packs sold updated!');
-      fetchInvestors();
-    }
-  }
   
     // Show modal when clicking "Add Investor"
     document.getElementById('add-investor-btn').addEventListener('click', () => {
