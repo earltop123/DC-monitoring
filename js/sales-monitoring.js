@@ -127,7 +127,7 @@ function populateMonthFilter() {
 }
 
 document.addEventListener('DOMContentLoaded', () => {
-    checkAuth().then(isAuthenticated => {
+    checkAuth('admin').then(isAuthenticated => {
         if (isAuthenticated) {
             populateYearFilter();
             populateMonthFilter();
