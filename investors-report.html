@@ -3,39 +3,28 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Investor Detail</title>
+  <title>Investor Report</title>
   <link rel="stylesheet" href="styles.css">
 </head>
 <body>
-  <h1 id="investor-name"></h1>
-
-  <h2>Vendors</h2>
-  <table id="vendors-table">
-    <thead>
-      <tr>
-        <th>Name</th>
-        <th>Packs Sold</th>
-        <th>Action</th>
-      </tr>
-    </thead>
-    <tbody>
-      <!-- Rows will be added here -->
-    </tbody>
-  </table>
-
-  <h2>Add New Vendor</h2>
-  <form id="add-vendor-form">
-    <input type="text" id="vendor-name" placeholder="Name" required>
-    <input type="number" id="vendor-packs" placeholder="Packs Sold" required>
-    <button type="submit">Add</button>
-  </form>
-
-  <h2>Assign Existing Vendors</h2>
-  <ul id="unassigned-vendors">
-    <!-- List items will be added here -->
-  </ul>
-
-  <button id="view-report">View Report</button>
+  <div class="report">
+    <h1 id="report-title">Investor Report</h1>
+    <p id="report-date"></p>
+    <table id="report-table">
+      <thead>
+        <tr>
+          <th>Vendor Name</th>
+          <th>Packs Sold</th>
+        </tr>
+      </thead>
+      <tbody>
+        <!-- Rows will be added here -->
+      </tbody>
+    </table>
+    <p id="total-packs"></p>
+    <p id="total-cut"></p>
+    <button onclick="window.print()">Print/Save as PDF</button>
+  </div>
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
   <script>
@@ -43,7 +32,7 @@
     const urlParams = new URLSearchParams(window.location.search);
     const investorId = urlParams.get('id');
 
-    async function fetchInvestorData() {
+    async function fetchReportData() {
       const { data: investor, error: investorError } = await supabase
         .from('investors')
         .select('name')
@@ -53,98 +42,31 @@
         console.error('Error fetching investor:', investorError);
         return;
       }
-      document.getElementById('investor-name').textContent = investor.name;
+      document.getElementById('report-title').textContent = `Investor Report: ${investor.name}`;
+      document.getElementById('report-date').textContent = `Date: ${new Date().toLocaleDateString()}`;
 
       const { data: vendors, error: vendorsError } = await supabase
         .from('vendors')
-        .select('id, name, packs_sold')
+        .select('name, packs_sold')
         .eq('investor_id', investorId);
       if (vendorsError) {
         console.error('Error fetching vendors:', vendorsError);
         return;
       }
-      const tbody = document.querySelector('#vendors-table tbody');
-      tbody.innerHTML = '';
+      const tbody = document.querySelector('#report-table tbody');
+      let totalPacks = 0;
       vendors.forEach(vendor => {
         const row = document.createElement('tr');
-        row.innerHTML = `
-          <td>${vendor.name}</td>
-          <td><input type="number" value="${vendor.packs_sold}" data-id="${vendor.id}"></td>
-          <td><button data-id="${vendor.id}">Save</button></td>
-        `;
+        row.innerHTML = `<td>${vendor.name}</td><td>${vendor.packs_sold}</td>`;
         tbody.appendChild(row);
+        totalPacks += vendor.packs_sold;
       });
-
-      tbody.addEventListener('click', async (e) => {
-        if (e.target.tagName === 'BUTTON') {
-          const vendorId = e.target.dataset.id;
-          const input = e.target.parentElement.previousElementSibling.querySelector('input');
-          const packs = parseInt(input.value);
-          const { error } = await supabase
-            .from('vendors')
-            .update({ packs_sold: packs })
-            .eq('id', vendorId);
-          if (error) console.error('Error updating packs sold:', error);
-        }
-      });
+      document.getElementById('total-packs').textContent = `Total Packs Sold: ${totalPacks}`;
+      const totalCut = (totalPacks * 13.50).toFixed(2);
+      document.getElementById('total-cut').textContent = `Total Cut: $${totalCut}`;
     }
 
-    async function fetchUnassignedVendors() {
-      const { data, error } = await supabase
-        .from('vendors')
-        .select('id, name')
-        .is('investor_id', null);
-      if (error) {
-        console.error('Error fetching unassigned vendors:', error);
-        return;
-      }
-      const ul = document.getElementById('unassigned-vendors');
-      ul.innerHTML = '';
-      data.forEach(vendor => {
-        const li = document.createElement('li');
-        li.innerHTML = `${vendor.name} <button data-id="${vendor.id}">Assign</button>`;
-        ul.appendChild(li);
-      });
-
-      ul.addEventListener('click', async (e) => {
-        if (e.target.tagName === 'BUTTON') {
-          const vendorId = e.target.dataset.id;
-          const { error } = await supabase
-            .from('vendors')
-            .update({ investor_id: investorId })
-            .eq('id', vendorId);
-          if (error) {
-            console.error('Error assigning vendor:', error);
-          } else {
-            e.target.parentElement.remove();
-            fetchInvestorData();
-          }
-        }
-      });
-    }
-
-    document.getElementById('add-vendor-form').addEventListener('submit', async (e) => {
-      e.preventDefault();
-      const name = document.getElementById('vendor-name').value;
-      const packs = parseInt(document.getElementById('vendor-packs').value);
-      const { error } = await supabase
-        .from('vendors')
-        .insert({ name, packs_sold: packs, investor_id: investorId });
-      if (error) {
-        console.error('Error adding vendor:', error);
-      } else {
-        document.getElementById('vendor-name').value = '';
-        document.getElementById('vendor-packs').value = '';
-        fetchInvestorData();
-      }
-    });
-
-    document.getElementById('view-report').addEventListener('click', () => {
-      window.open(`investor-report.html?id=${investorId}`, '_blank');
-    });
-
-    fetchInvestorData();
-    fetchUnassignedVendors();
+    fetchReportData();
   </script>
 </body>
 </html>
