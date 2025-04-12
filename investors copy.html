@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Investors List</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <h1>Investors</h1>
+  <table id="investors-table">
+    <thead>
+      <tr>
+        <th>Name</th>
+        <th>Vendors</th>
+        <th>Packs Sold</th>
+        <th>Total Cut</th>
+      </tr>
+    </thead>
+    <tbody>
+      <!-- Rows will be added here -->
+    </tbody>
+  </table>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
+  <script>
+    const supabase = Supabase.createClient('your-supabase-url', 'your-supabase-key');
+
+    async function fetchInvestors() {
+      const { data, error } = await supabase.from('investor_summary').select('*');
+      if (error) {
+        console.error('Error fetching investors:', error);
+        return;
+      }
+      const tbody = document.querySelector('#investors-table tbody');
+      data.forEach(investor => {
+        const row = document.createElement('tr');
+        const nameCell = document.createElement('td');
+        const link = document.createElement('a');
+        link.href = `investor-detail.html?id=${investor.id}`;
+        link.textContent = investor.name;
+        nameCell.appendChild(link);
+        row.appendChild(nameCell);
+        row.appendChild(document.createElement('td')).textContent = investor.number_of_vendors;
+        row.appendChild(document.createElement('td')).textContent = investor.total_packs_sold;
+        const totalCut = (investor.total_packs_sold * 13.50).toFixed(2);
+        row.appendChild(document.createElement('td')).textContent = `$${totalCut}`;
+        tbody.appendChild(row);
+      });
+    }
+
+    fetchInvestors();
+  </script>
+</body>
+</html>
