@@ -87,23 +87,44 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
   });
   
-  document.getElementById('investors-table').addEventListener('change', async (e) => {
-    if (e.target.classList.contains('assign-vendor')) {
-      const vendorId = e.target.value;
+  // Report modal handlers
+document.getElementById('investors-table').addEventListener('click', async (e) => {
+    if (e.target.classList.contains('view-report-btn')) {
       const investorId = e.target.dataset.investorId;
-      if (vendorId) {
-        const { error } = await supabase
-          .from('vendors')
-          .update({ investor_id: investorId })
-          .eq('id', vendorId);
-        if (error) {
-          showToast('Error assigning vendor: ' + error.message);
-        } else {
-          showToast('Vendor assigned successfully!');
-          fetchInvestors();
-        }
+      const investorName = e.target.dataset.investorName;
+      const { data: vendors, error } = await supabase
+        .from('vendors')
+        .select('name, packs_sold')
+        .eq('investor_id', investorId);
+      if (error) {
+        showToast('Error fetching report data: ' + error.message);
+        return;
       }
+  
+      const totalPacks = vendors.reduce((sum, v) => sum + v.packs_sold, 0);
+      const totalCut = (totalPacks * 13.50).toFixed(2);
+  
+      document.getElementById('report-title').textContent = `Investor Report: ${investorName}`;
+      document.getElementById('report-date').textContent = `Date: ${new Date().toLocaleDateString()}`;
+      const tbody = document.querySelector('#report-table tbody');
+      tbody.innerHTML = vendors.map(v => `
+        <tr>
+          <td>${v.name}</td>
+          <td>${v.packs_sold}</td>
+        </tr>
+      `).join('');
+      document.getElementById('report-total-packs').textContent = `Total Packs Sold: ${totalPacks}`;
+      document.getElementById('report-total-cut').textContent = `Total Cut: $${totalCut}`;
+      document.getElementById('report-modal').style.display = 'flex';
     }
+  });
+  
+  document.getElementById('report-print').addEventListener('click', () => {
+    window.print();
+  });
+  
+  document.getElementById('report-close').addEventListener('click', () => {
+    document.getElementById('report-modal').style.display = 'none';
   });
   
   document.getElementById('add-vendor-form').addEventListener('submit', async (e) => {
