@@ -6,70 +6,71 @@ document.addEventListener('DOMContentLoaded', async () => {
   
     // Fetch and display investors
     // Fetch and display investors
-async function fetchInvestors() {
-    const { data: investors, error: investorError } = await supabase.from('investors').select('id, name, contact');
-    if (investorError) {
-      showToast('Error fetching investors: ' + investorError.message);
-      return;
-    }
-  
-    const tbody = document.querySelector('#investors-table tbody');
-    tbody.innerHTML = '';
-    for (const investor of investors) {
-      const { data: vendors, error: vendorError } = await supabase
-        .from('vendors')
-        .select('id, name, packs_sold')
-        .eq('investor_id', investor.id);
-      if (vendorError) {
-        showToast('Error fetching vendors: ' + vendorError.message);
-        continue;
+    async function fetchInvestors() {
+        const { data: investors, error: investorError } = await supabase.from('investors').select('id, name, contact');
+        if (investorError) {
+          showToast('Error fetching investors: ' + investorError.message);
+          return;
+        }
+      
+        const tbody = document.querySelector('#investors-table tbody');
+        tbody.innerHTML = '';
+        for (const investor of investors) {
+          const { data: vendors, error: vendorError } = await supabase
+            .from('vendors')
+            .select('id, name, packs_sold')
+            .eq('investor_id', investor.id);
+          if (vendorError) {
+            showToast('Error fetching vendors: ' + vendorError.message);
+            continue;
+          }
+      
+          const row = document.createElement('tr');
+          row.innerHTML = `
+            <td>${investor.name}</td>
+            <td>${investor.contact || ''}</td>
+            <td>
+              <button class="add-vendor-btn" data-investor-id="${investor.id}">Add Vendor</button>
+              <select class="assign-vendor" data-investor-id="${investor.id}">
+                <option value="">Assign Existing Vendor</option>
+              </select>
+              <table class="vendor-table">
+                <thead>
+                  <tr>
+                    <th>Name</th>
+                    <th>Packs Sold</th>
+                    <th>Action</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  ${vendors.map(vendor => `
+                    <tr>
+                      <td>${vendor.name}</td>
+                      <td><input type="number" value="${vendor.packs_sold}" data-vendor-id="${vendor.id}" min="0"></td>
+                      <td><button class="save-packs" data-vendor-id="${vendor.id}">Save</button></td>
+                    </tr>
+                  `).join('')}
+                </tbody>
+              </table>
+            </td>
+            <td><button class="view-report-btn" data-investor-id="${investor.id}" data-investor-name="${investor.name}">View Report</button></td>
+          `;
+          tbody.appendChild(row);
+      
+          // Populate assign vendor dropdown
+          const { data: unassignedVendors } = await supabase
+            .from('vendors')
+            .select('id, name')
+            .is('investor_id', null);
+          const select = row.querySelector('.assign-vendor');
+          unassignedVendors.forEach(vendor => {
+            const option = document.createElement('option');
+            option.value = vendor.id;
+            option.textContent = vendor.name;
+            select.appendChild(option);
+          });
+        }
       }
-  
-      const row = document.createElement('tr');
-      row.innerHTML = `
-        <td>${investor.name}</td>
-        <td>${investor.contact || ''}</td>
-        <td>
-          <button class="add-vendor-btn" data-investor-id="${investor.id}">Add Vendor</button>
-          <select class="assign-vendor" data-investor-id="${investor.id}">
-            <option value="">Assign Existing Vendor</option>
-          </select>
-          <table class="vendor-table">
-            <thead>
-              <tr>
-                <th>Name</th>
-                <th>Packs Sold</th>
-                <th>Action</th>
-              </tr>
-            </thead>
-            <tbody>
-              ${vendors.map(vendor => `
-                <tr>
-                  <td>${vendor.name}</td>
-                  <td><input type="number" value="${vendor.packs_sold}" data-vendor-id="${vendor.id}" min="0"></td>
-                  <td><button class="save-packs" data-vendor-id="${vendor.id}">Save</button></td>
-                </tr>
-              `).join('')}
-            </tbody>
-          </table>
-        </td>
-      `;
-      tbody.appendChild(row);
-  
-      // Populate assign vendor dropdown
-      const { data: unassignedVendors } = await supabase
-        .from('vendors')
-        .select('id, name')
-        .is('investor_id', null);
-      const select = row.querySelector('.assign-vendor');
-      unassignedVendors.forEach(vendor => {
-        const option = document.createElement('option');
-        option.value = vendor.id;
-        option.textContent = vendor.name;
-        select.appendChild(option);
-      });
-    }
-  }
   
   // Add vendor modal handlers
   document.getElementById('investors-table').addEventListener('click', (e) => {
