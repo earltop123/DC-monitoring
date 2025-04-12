@@ -21,7 +21,11 @@
       <!-- Rows will be added here -->
     </tbody>
   </table>
-
+  <h2>Add New Investor</h2>
+  <form id="add-investor-form">
+    <input type="text" id="investor-name" placeholder="Investor Name" required>
+    <button type="submit">Add Investor</button>
+  </form>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
   <script>
     const supabase = Supabase.createClient('your-supabase-url', 'your-supabase-key');
