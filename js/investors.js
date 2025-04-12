@@ -1,6 +1,7 @@
 document.addEventListener('DOMContentLoaded', async () => {
     // Check authentication (requires 'management' role)
     const isAuthenticated = await checkAuth('management');
+    console.log('Is authenticated:', isAuthenticated);
     if (!isAuthenticated) return;
   
     // Fetch and display investors
@@ -25,7 +26,10 @@ document.addEventListener('DOMContentLoaded', async () => {
     // Show modal when clicking "Add Investor"
     document.getElementById('add-investor-btn').addEventListener('click', () => {
       console.log('Add Investor button clicked');
-      document.getElementById('add-investor-modal').style.display = 'flex';
+      const modal = document.getElementById('add-investor-modal');
+      console.log('Modal element:', modal);
+      modal.style.display = 'flex';
+      console.log('Modal display after change:', modal.style.display);
     });
   
     // Handle form submission
