@@ -166,3 +166,11 @@ h1 {
 .order-row.cancelled button {
     display: none; /* Hide buttons for cancelled orders */
 }
+
+.filter-total {
+    text-align: center;
+    margin: 15px 0;
+    font-size: 16px;
+    font-weight: 600;
+    color: #D32F2F;
+}
