@@ -2,7 +2,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     // Check authentication (requires 'management' role)
     const isAuthenticated = await checkAuth('management');
     console.log('Is authenticated:', isAuthenticated);
-    if (!isAuthenticated) return;
+    /*if (!isAuthenticated) return;*/
   
     // Fetch and display investors
     async function fetchInvestors() {
