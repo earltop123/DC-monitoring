@@ -39,6 +39,15 @@ async function fetchOrders() {
 
 function renderOrders(orders) {
     const orderList = document.getElementById('order-list');
+    const filterTotal = document.getElementById('filter-total');
+    const paymentFilter = document.getElementById('payment-filter').value;
+
+    // Calculate total
+    const total = orders.reduce((sum, order) => sum + order.total_amount, 0);
+    const filterLabel = paymentFilter || 'All Payment Methods';
+    filterTotal.textContent = `${filterLabel}: ₱${total.toFixed(2)}`;
+
+    // Render orders
     orderList.innerHTML = orders.map(order => {
         const canUpdate = ['Partial', 'Collectibles'].includes(order.payment_method) && order.status !== 'cancelled' && order.amount_due > 0;
         const rowClass = order.status === 'cancelled' ? 'cancelled' : '';
