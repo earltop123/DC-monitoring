@@ -25,6 +25,10 @@ document.addEventListener('DOMContentLoaded', async () => {
     // Show modal when clicking "Add Investor"
     document.getElementById('add-investor-btn').addEventListener('click', () => {
       document.getElementById('add-investor-modal').style.display = 'flex';
+      document.getElementById('add-investor-btn').addEventListener('click', () => {
+        console.log('Add Investor button clicked');
+        document.getElementById('add-investor-modal').style.display = 'flex';
+      });
     });
   
     // Handle form submission
