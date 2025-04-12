@@ -7,35 +7,37 @@
   <link rel="stylesheet" href="css/investors.css">
 </head>
 <body>
-  <div id="toast-container"></div>
-  <h1>Investors</h1>
-  <button id="add-investor-btn">Add Investor</button>
-  <table id="investors-table">
-    <thead>
-      <tr>
-        <th>Name</th>
-        <th>Contact</th>
-      </tr>
-    </thead>
-    <tbody></tbody>
-  </table>
-
-  <!-- Modal for adding investor -->
-  <div id="add-investor-modal" class="modal" style="display: none;">
-    <div class="modal-content">
-      <h3>Add Investor</h3>
-      <form id="add-investor-form">
-        <label for="investor-name">Name:</label>
-        <input type="text" id="investor-name" required>
-        <label for="investor-contact">Contact:</label>
-        <input type="text" id="investor-contact">
-        <button type="submit">Add</button>
-        <button type="button" id="modal-close">Close</button>
-      </form>
+    <div id="toast-container"></div>
+    <h1>Investors</h1>
+    <button id="add-investor-btn">Add Investor</button>
+    <table id="investors-table">
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>Contact</th>
+        </tr>
+      </thead>
+      <tbody></tbody>
+    </table>
+  
+    <!-- Modal for adding investor -->
+    <div id="add-investor-modal" class="modal" style="display: none;">
+      <div class="modal-content">
+        <h3>Add Investor</h3>
+        <form id="add-investor-form">
+          <label for="investor-name">Name:</label>
+          <input type="text" id="investor-name" required>
+          <label for="investor-contact">Contact:</label>
+          <input type="text" id="investor-contact">
+          <button type="submit">Add</button>
+          <button type="button" id="modal-close">Close</button>
+        </form>
+      </div>
     </div>
-  </div>
-
-  <script src="js/common.js"></script>
-  <script src="js/investors.js"></script>
-</body>
+  
+    <!-- Load Supabase CDN first -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="common.js"></script>
+    <script src="investors.js"></script>
+  </body>
 </html>
