@@ -48,14 +48,16 @@ document.getElementById('login-form').addEventListener('submit', async (e) => {
     }
 
     console.log('User role:', profiles.role);
-    document.getElementById('loading-modal').style.display = 'none';
-    showToast('Login successful! Redirecting...', () => {
-        if (profiles.role === 'admin') {
-            window.location.href = 'admin-dashboard.html';
-        } else if (profiles.role === 'management') {
-            window.location.href = 'management-dashboard.html';
-        } else if (profiles.role === 'agent') {
-            window.location.href = 'agent-dashboard.html';
-        }
-    });
+document.getElementById('loading-modal').style.display = 'none';
+console.log('Loading modal hidden');
+showToast('Login successful! Redirecting...', () => {
+    if (profiles.role === 'admin') {
+        window.location.href = 'admin-dashboard.html';
+    } else if (profiles.role === 'management') {
+        window.location.href = 'management-dashboard.html';
+    } else if (profiles.role === 'agent') {
+        window.location.href = 'agent-dashboard.html';
+    }
 });
+});
+
