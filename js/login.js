@@ -50,7 +50,7 @@ document.getElementById('login-form').addEventListener('submit', async (e) => {
     console.log('User role:', profiles.role);
 document.getElementById('loading-modal').style.display = 'none';
 console.log('Loading modal hidden');
-showToast('Login successful! Redirecting...', () => {
+//showToast('Login successful! Redirecting...', () => {
     if (profiles.role === 'admin') {
         window.location.href = 'admin-dashboard.html';
     } else if (profiles.role === 'management') {
@@ -59,5 +59,5 @@ showToast('Login successful! Redirecting...', () => {
         window.location.href = 'agent-dashboard.html';
     }
 });
-});
+//});
 
