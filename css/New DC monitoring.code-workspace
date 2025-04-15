@@ -1,0 +1,14 @@
+{
+	"folders": [
+		{
+			"path": "../../../New DC monitoring"
+		},
+		{
+			"name": "DC-monitoring",
+			"path": ".."
+		}
+	],
+	"settings": {
+		"liveServer.settings.multiRootWorkspaceName": "DC-monitoring"
+	}
+}
